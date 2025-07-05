@@ -1,0 +1,9 @@
+/ (root)
+|-- index.html
+|-- services.html
+|-- portfolio.html
+|-- about.html
+|-- contact.html
+|-- assets/
+    |-- styles.css
+    |-- scripts.js
