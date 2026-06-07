@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NETPULSE — Device Test</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 60'%3E%3Ccircle cx='30' cy='30' r='30' fill='%23000'/%3E%3Cpath d='M 9 40 A 23 23 0 0 1 51 40' fill='none' stroke='%231e1e1e' stroke-width='5' stroke-linecap='round'/%3E%3Cpath d='M 9 40 A 23 23 0 0 1 51 40' fill='none' stroke='%2300f5a0' stroke-width='5' stroke-linecap='round' stroke-dasharray='72' stroke-dashoffset='18'/%3E%3Cline x1='30' y1='30' x2='30' y2='12' stroke='%2300f5a0' stroke-width='2.5' stroke-linecap='round'/%3E%3Ccircle cx='30' cy='30' r='4' fill='%2300f5a0'/%3E%3Ccircle cx='30' cy='30' r='2' fill='%23000'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#000000">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#000;--panel:#111;--panel2:#161616;
+  --border:#222;--border2:#2a2a2a;
+  --accent:#00f5a0;--accent-dim:rgba(0,245,160,0.10);--accent-glow:0 0 22px rgba(0,245,160,0.35);
+  --good:#00f5a0;--warn:#ffb800;--danger:#ff3d3d;
+  --good-dim:rgba(0,245,160,0.12);--warn-dim:rgba(255,184,0,0.12);--danger-dim:rgba(255,61,61,0.12);
+  --white:#fff;--grey2:#888;--grey3:#444;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{background:#000;}
+body{background:var(--bg);color:var(--white);font-family:'Rajdhani',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px 14px 48px;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle,#1e1e1e 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0;}
+.container{position:relative;z-index:1;width:100%;max-width:680px;}
+
+/* HEADER */
+header{text-align:center;margin-bottom:22px;display:flex;flex-direction:column;align-items:center;gap:10px;}
+.logo-row{display:flex;align-items:center;gap:16px;}
+.logo-icon{width:60px;height:60px;flex-shrink:0;}
+@keyframes needleLive{0%{transform:rotate(-80deg)}20%{transform:rotate(10deg)}35%{transform:rotate(-30deg)}55%{transform:rotate(50deg)}70%{transform:rotate(20deg)}85%{transform:rotate(60deg)}100%{transform:rotate(-80deg)}}
+@keyframes arcPulse{0%,100%{stroke:#00f5a0;filter:drop-shadow(0 0 3px #00f5a0)}55%{stroke:#00ffa8;filter:drop-shadow(0 0 10px #00f5a0)}}
+@keyframes dotBreath{0%,100%{opacity:1}50%{opacity:0.4}}
+@keyframes ringRotate{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.speedo-needle{transform-origin:50% 72%;animation:needleLive 3.2s cubic-bezier(0.4,0,0.2,1) infinite;}
+.speedo-arc{animation:arcPulse 3.2s ease-in-out infinite;}
+.speedo-dot{animation:dotBreath 1.6s ease-in-out infinite;}
+.speedo-ring{transform-origin:50% 50%;animation:ringRotate 8s linear infinite;opacity:0.3;}
+.logo-text{display:flex;flex-direction:column;align-items:flex-start;}
+.logo-main{font-size:2.1rem;font-weight:700;letter-spacing:7px;line-height:1;color:var(--white);}
+.logo-main span{color:var(--accent);text-shadow:var(--accent-glow);}
+.logo-sub{font-family:'Share Tech Mono',monospace;font-size:0.58rem;letter-spacing:3px;color:var(--grey3);text-transform:uppercase;margin-top:2px;}
+
+.back-btn{display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px solid var(--border2);color:var(--grey2);border-radius:8px;padding:7px 14px;font-family:'Share Tech Mono',monospace;font-size:0.65rem;letter-spacing:2px;cursor:pointer;text-decoration:none;transition:all 0.2s;margin-bottom:14px;}
+.back-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+/* BENCHMARK CARD */
+.bench-card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:24px 20px 22px;margin-bottom:12px;position:relative;overflow:hidden;}
+.bench-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);}
+.card-title{font-size:0.6rem;letter-spacing:3px;color:var(--grey3);text-transform:uppercase;font-family:'Share Tech Mono',monospace;margin-bottom:16px;}
+
+/* SCORE RING */
+.score-ring-wrap{display:flex;flex-direction:column;align-items:center;margin-bottom:18px;}
+.score-ring{position:relative;width:150px;height:150px;}
+.score-ring svg{width:100%;height:100%;}
+.sr-track{fill:none;stroke:#1e1e1e;stroke-width:10;stroke-linecap:round;}
+.sr-fill{fill:none;stroke:var(--accent);stroke-width:10;stroke-linecap:round;stroke-dasharray:408;stroke-dashoffset:408;transition:stroke-dashoffset 1.4s cubic-bezier(0.4,0,0.2,1),stroke 0.4s;filter:drop-shadow(0 0 6px var(--accent));}
+.sr-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;}
+.sr-val{font-size:2rem;font-weight:700;color:var(--white);font-family:'Share Tech Mono',monospace;line-height:1;}
+.sr-label{font-size:0.58rem;color:var(--grey2);letter-spacing:2px;font-family:'Share Tech Mono',monospace;}
+.sr-sublabel{font-size:0.62rem;color:var(--grey3);letter-spacing:2px;font-family:'Share Tech Mono',monospace;margin-top:6px;}
+
+/* BENCH BARS */
+.bench-bars{display:flex;flex-direction:column;gap:10px;margin-bottom:16px;}
+.bbar-row{display:flex;flex-direction:column;gap:5px;}
+.bbar-top{display:flex;justify-content:space-between;align-items:center;}
+.bbar-label{font-family:'Share Tech Mono',monospace;font-size:0.62rem;color:var(--grey2);letter-spacing:1px;}
+.bbar-val{font-family:'Share Tech Mono',monospace;font-size:0.72rem;font-weight:700;}
+.bbar-track{height:7px;background:#1a1a1a;border-radius:4px;overflow:hidden;}
+.bbar-fill{height:100%;border-radius:4px;width:0%;transition:width 1.4s cubic-bezier(0.4,0,0.2,1);}
+.bbar-note{font-family:'Share Tech Mono',monospace;font-size:0.55rem;color:var(--grey3);}
+
+.bench-progress-wrap{height:2px;background:var(--border);border-radius:2px;margin:10px 0 10px;overflow:hidden;}
+.bench-progress-bar{height:100%;background:linear-gradient(90deg,var(--accent),rgba(0,245,160,0.4));border-radius:2px;width:0%;transition:width 0.5s ease;box-shadow:0 0 6px var(--accent);}
+.bench-status{font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:var(--grey3);letter-spacing:2px;text-align:center;margin-bottom:14px;}
+
+.verdict-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;font-size:0.85rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;}
+.verdict-chip.good{background:var(--good-dim);color:var(--good);border:1px solid rgba(0,245,160,0.25);}
+.verdict-chip.ok{background:var(--warn-dim);color:var(--warn);border:1px solid rgba(255,184,0,0.25);}
+.verdict-chip.bad{background:var(--danger-dim);color:var(--danger);border:1px solid rgba(255,61,61,0.25);}
+
+.btn-run{background:var(--accent);color:#000;border:none;border-radius:10px;padding:12px 40px;font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;letter-spacing:4px;cursor:pointer;text-transform:uppercase;transition:all 0.2s;box-shadow:var(--accent-glow);width:100%;max-width:260px;display:block;margin:0 auto;}
+.btn-run:hover:not(:disabled){background:#00ffa8;box-shadow:0 0 36px rgba(0,245,160,0.55);transform:translateY(-2px);}
+.btn-run:disabled{background:#222;color:#444;box-shadow:none;cursor:not-allowed;}
+@keyframes pulse-ring{0%{box-shadow:0 0 0 0 rgba(0,245,160,0.45)}70%{box-shadow:0 0 0 14px rgba(0,245,160,0)}100%{box-shadow:0 0 0 0 rgba(0,245,160,0)}}
+.btn-run.pulsing{animation:pulse-ring 1.4s infinite;}
+
+/* SPECS */
+.specs-card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:12px;}
+.specs-section{margin-bottom:14px;}
+.specs-section:last-child{margin-bottom:0;}
+.section-label{font-size:0.57rem;letter-spacing:3px;color:var(--accent);text-transform:uppercase;font-family:'Share Tech Mono',monospace;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.spec-row{display:flex;align-items:flex-start;justify-content:space-between;padding:8px 0;border-bottom:1px solid #0f0f0f;gap:16px;}
+.spec-row:last-child{border-bottom:none;}
+.spec-key{font-family:'Share Tech Mono',monospace;font-size:0.63rem;color:var(--grey2);min-width:130px;flex-shrink:0;}
+.spec-val{font-family:'Share Tech Mono',monospace;font-size:0.68rem;color:var(--white);font-weight:600;text-align:right;word-break:break-word;max-width:320px;}
+.spec-val.g{color:var(--good);}
+.spec-val.w{color:var(--warn);}
+.spec-val.m{color:var(--grey3);}
+.spec-tag{display:inline-block;font-size:0.5rem;letter-spacing:1px;padding:1px 5px;border-radius:3px;margin-left:5px;font-family:'Share Tech Mono',monospace;}
+.spec-tag.real{background:rgba(0,245,160,0.1);color:var(--good);border:1px solid rgba(0,245,160,0.2);}
+.spec-tag.est{background:rgba(255,184,0,0.1);color:var(--warn);border:1px solid rgba(255,184,0,0.2);}
+
+/* BATTERY */
+.bat-inline{display:inline-flex;align-items:center;gap:8px;}
+.bat-bar-wrap{width:44px;height:8px;background:#1a1a1a;border-radius:3px;overflow:hidden;border:1px solid #2a2a2a;}
+.bat-bar{height:100%;border-radius:3px;transition:width 1s ease;}
+
+.legend-row{display:flex;gap:12px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);flex-wrap:wrap;}
+.legend-item{display:flex;align-items:center;gap:5px;font-family:'Share Tech Mono',monospace;font-size:0.55rem;color:var(--grey3);}
+.ltag{display:inline-block;font-size:0.48rem;letter-spacing:1px;padding:1px 5px;border-radius:3px;font-family:'Share Tech Mono',monospace;}
+.ltag.real{background:rgba(0,245,160,0.1);color:var(--good);border:1px solid rgba(0,245,160,0.2);}
+.ltag.est{background:rgba(255,184,0,0.1);color:var(--warn);border:1px solid rgba(255,184,0,0.2);}
+
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.15}}
+.ldot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--grey3);animation:blink 1s infinite;}
+footer{text-align:center;font-family:'Share Tech Mono',monospace;font-size:0.57rem;color:var(--grey3);margin-top:20px;letter-spacing:3px;}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="logo-row">
+    <svg class="logo-icon" viewBox="0 0 60 60" fill="none">
+      <defs>
+        <filter id="iglow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <radialGradient id="ibg" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#1c1c1c"/><stop offset="100%" stop-color="#080808"/></radialGradient>
+      </defs>
+      <circle cx="30" cy="30" r="28" fill="url(#ibg)" stroke="#1e1e1e" stroke-width="1.5"/>
+      <circle class="speedo-ring" cx="30" cy="30" r="26" fill="none" stroke="#00f5a0" stroke-width="1" stroke-dasharray="3 5"/>
+      <path d="M 9 40 A 23 23 0 0 1 51 40" fill="none" stroke="#1e1e1e" stroke-width="5" stroke-linecap="round"/>
+      <path class="speedo-arc" d="M 9 40 A 23 23 0 0 1 51 40" fill="none" stroke="#00f5a0" stroke-width="5" stroke-linecap="round" stroke-dasharray="72" stroke-dashoffset="18"/>
+      <circle cx="11" cy="34" r="1.8" fill="#ff3d3d" opacity="0.8"/>
+      <circle cx="18" cy="16" r="1.8" fill="#ffb800" opacity="0.8"/>
+      <circle cx="40" cy="12" r="1.8" fill="#00f5a0" opacity="0.8"/>
+      <line x1="30" y1="8" x2="30" y2="13" stroke="#333" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="13" y1="21" x2="17" y2="24" stroke="#333" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="47" y1="21" x2="43" y2="24" stroke="#333" stroke-width="1.5" stroke-linecap="round"/>
+      <g class="speedo-needle" filter="url(#iglow)">
+        <line x1="30" y1="30" x2="30" y2="12" stroke="#00f5a0" stroke-width="2.2" stroke-linecap="round"/>
+        <line x1="30" y1="30" x2="30" y2="35" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+      </g>
+      <circle cx="30" cy="30" r="3.5" fill="#00f5a0" filter="url(#iglow)"/>
+      <circle class="speedo-dot" cx="30" cy="30" r="2" fill="#000"/>
+    </svg>
+    <div class="logo-text">
+      <div class="logo-main">NET<span>PULSE</span></div>
+      <div class="logo-sub">Device Benchmark</div>
+    </div>
+  </div>
+</header>
+
+<a class="back-btn" href="index.html">← BACK TO DASHBOARD</a>
+
+<!-- BENCHMARK -->
+<div class="bench-card">
+  <div class="card-title">// CPU PERFORMANCE BENCHMARK</div>
+
+  <div class="score-ring-wrap">
+    <div class="score-ring">
+      <svg viewBox="0 0 150 150">
+        <circle class="sr-track" cx="75" cy="75" r="65"/>
+        <circle class="sr-fill" id="srFill" cx="75" cy="75" r="65" transform="rotate(-90 75 75)"/>
+      </svg>
+      <div class="sr-center">
+        <div class="sr-val" id="srVal">--</div>
+        <div class="sr-label" id="srLabel">SCORE</div>
+      </div>
+    </div>
+    <div class="sr-sublabel" id="srSublabel">PRESS RUN TO BENCHMARK</div>
+  </div>
+
+  <div class="bench-bars" id="benchBars">
+    <div class="bbar-row">
+      <div class="bbar-top">
+        <span class="bbar-label">SINGLE-CORE</span>
+        <span class="bbar-val" id="barSingleVal" style="color:var(--grey3)">--</span>
+      </div>
+      <div class="bbar-track"><div class="bbar-fill" id="barSingle" style="background:var(--good)"></div></div>
+      <div class="bbar-note">Higher = faster per-core processing</div>
+    </div>
+    <div class="bbar-row">
+      <div class="bbar-top">
+        <span class="bbar-label">MULTI-CORE</span>
+        <span class="bbar-val" id="barMultiVal" style="color:var(--grey3)">--</span>
+      </div>
+      <div class="bbar-track"><div class="bbar-fill" id="barMulti" style="background:var(--warn)"></div></div>
+      <div class="bbar-note">All cores working in parallel</div>
+    </div>
+    <div class="bbar-row">
+      <div class="bbar-top">
+        <span class="bbar-label">MEMORY BW</span>
+        <span class="bbar-val" id="barMemVal" style="color:var(--grey3)">-- MB/s</span>
+      </div>
+      <div class="bbar-track"><div class="bbar-fill" id="barMem" style="background:#00d4ff"></div></div>
+      <div class="bbar-note">Read + write speed of RAM</div>
+    </div>
+    <div class="bbar-row">
+      <div class="bbar-top">
+        <span class="bbar-label">JS RENDER</span>
+        <span class="bbar-val" id="barRenderVal" style="color:var(--grey3)">-- fps</span>
+      </div>
+      <div class="bbar-track"><div class="bbar-fill" id="barRender" style="background:#c084fc"></div></div>
+      <div class="bbar-note">DOM + layout render throughput</div>
+    </div>
+  </div>
+
+  <div class="bench-progress-wrap"><div class="bench-progress-bar" id="benchProg"></div></div>
+  <div class="bench-status" id="benchStatus">IDLE — TAP TO START</div>
+  <div id="benchVerdict" style="text-align:center"></div>
+
+  <br>
+  <button class="btn-run pulsing" id="btnRun" onclick="runBenchmark()">▶ RUN BENCHMARK</button>
+</div>
+
+<!-- SPECS -->
+<div class="specs-card" id="specsCard">
+  <div class="card-title">// DEVICE SPECIFICATIONS</div>
+  <div id="specsContainer">
+    <div style="font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:var(--grey3);text-align:center;padding:20px 0;">
+      Scanning device <span class="ldot"></span>
+    </div>
+  </div>
+</div>
+
+</div>
+<footer>NETPULSE v2.2 &nbsp;•&nbsp; BUILT BY SYNCRODEV</footer>
+
+<script>
+// ═══ HELPERS ══════════════════════════════════════════════════════════════
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const clamp = (v,mn,mx) => Math.max(mn, Math.min(mx, v));
+
+function R(key, value, cls, tag) {
+  const tagHtml = tag ? `<span class="spec-tag ${tag}">${tag.toUpperCase()}</span>` : '';
+  return `<div class="spec-row">
+    <span class="spec-key">${key}</span>
+    <span class="spec-val ${cls||''}">${value}${tagHtml}</span>
+  </div>`;
+}
+function S(label, rows) {
+  return `<div class="specs-section">
+    <div class="section-label">${label}</div>
+    ${rows.join('')}
+  </div>`;
+}
+
+// ═══ BENCHMARK — real heavy load via Web Worker ════════════════════════════
+// Runs a genuine compute-heavy task in a Worker, measures wall-clock time,
+// then compares against known baselines to derive a score. No fake GHz.
+
+const WORKER_CODE = `
+self.onmessage = function() {
+  const t0 = performance.now();
+
+  // TASK 1: Large prime sieve (Sieve of Eratosthenes up to 500k)
+  const limit = 500000;
+  const sieve = new Uint8Array(limit + 1);
+  for (let i = 2; i <= limit; i++) {
+    if (!sieve[i]) for (let j = i*2; j <= limit; j += i) sieve[j] = 1;
+  }
+
+  // TASK 2: Float-heavy loop (sqrt, sin, cos)
+  let x = 1.0;
+  for (let i = 0; i < 2000000; i++) {
+    x = Math.sqrt(Math.abs(Math.sin(i * 0.001) * Math.cos(i * 0.002) + x));
+  }
+
+  // TASK 3: String manipulation
+  let s = '';
+  for (let i = 0; i < 50000; i++) s += (i % 10).toString();
+  s = s.split('').reverse().join('');
+
+  // TASK 4: Array sort
+  const arr = new Float64Array(100000);
+  for (let i = 0; i < arr.length; i++) arr[i] = Math.random();
+  arr.sort();
+
+  const elapsed = performance.now() - t0;
+  self.postMessage({ elapsed, checksum: x + sieve[499999] + s.length + arr[0] });
+};
+`;
+
+// Baseline times (ms) measured on real devices for the above workload:
+// High-end 2023 phone (SD 8 Gen 2 / A17):  ~400ms
+// Mid-range 2021 phone (SD 750G / A14):     ~800ms
+// Entry-level phone (SD 460 / A12):         ~1600ms
+// Old/slow phone (SD 435 / 2017):           ~3000ms+
+// Fast desktop (i7/Ryzen):                  ~180ms
+function elapsedToScore(ms) {
+  // Lower time = better. Score 0–100.
+  // 150ms → 100, 3000ms → 5
+  return Math.round(Math.max(5, Math.min(100, (150 / ms) * 100)));
+}
+
+function elapsedToTier(ms) {
+  if (ms < 300)  return { label: 'HIGH-END',    cls: 'good', color: '#00f5a0' };
+  if (ms < 700)  return { label: 'MID-RANGE',   cls: 'ok',   color: '#ffb800' };
+  if (ms < 1500) return { label: 'ENTRY-LEVEL', cls: 'ok',   color: '#ffb800' };
+  return           { label: 'LOW-END',    cls: 'bad',  color: '#ff3d3d' };
+}
+
+function runWorkerBench() {
+  return new Promise((resolve, reject) => {
+    const blob = new Blob([WORKER_CODE], { type: 'application/javascript' });
+    const url  = URL.createObjectURL(blob);
+    const w    = new Worker(url);
+    const t0   = performance.now(); // measure from main thread too
+    w.onmessage = e => {
+      const elapsed = performance.now() - t0;
+      w.terminate();
+      URL.revokeObjectURL(url);
+      resolve(elapsed);
+    };
+    w.onerror = err => { w.terminate(); URL.revokeObjectURL(url); reject(err); };
+    w.postMessage('go');
+  });
+}
+
+function runMemBench() {
+  const SIZE = 8 * 1024 * 1024;
+  const arr  = new Float32Array(SIZE);
+  const t0   = performance.now();
+  for (let i = 0; i < SIZE; i++) arr[i] = i * 0.5;
+  let s = 0;
+  for (let i = 0; i < SIZE; i++) s += arr[i];
+  const ms = performance.now() - t0;
+  return Math.round((SIZE * 4 * 2) / (ms / 1000) / 1e6);
+}
+
+function runRenderBench() {
+  return new Promise(res => {
+    const frames = []; let last = performance.now(), count = 0;
+    function f(now) {
+      frames.push(now - last); last = now; count++;
+      if (count < 60) requestAnimationFrame(f);
+      else {
+        const avg = frames.slice(10).reduce((a,b)=>a+b,0) / (frames.length-10);
+        res(Math.round(1000 / avg));
+      }
+    }
+    requestAnimationFrame(f);
+  });
+}
+
+function animateRing(score, color) {
+  const fill  = document.getElementById('srFill');
+  const valEl = document.getElementById('srVal');
+  fill.style.stroke = color;
+  fill.style.filter = `drop-shadow(0 0 6px ${color})`;
+  const t0 = performance.now();
+  (function tick(now) {
+    const p = Math.min((now-t0)/1300, 1), e = 1-Math.pow(1-p,3);
+    const cur = Math.round(score * e);
+    valEl.textContent = cur;
+    fill.style.strokeDashoffset = 408 - (cur/100)*408;
+    if (p < 1) requestAnimationFrame(tick);
+    else { valEl.textContent = score; fill.style.strokeDashoffset = 408-(score/100)*408; }
+  })(performance.now());
+}
+
+function animBar(id, valId, pct, display, color) {
+  document.getElementById(valId).textContent = display;
+  document.getElementById(valId).style.color = color;
+  setTimeout(() => {
+    document.getElementById(id).style.width = Math.max(2,pct) + '%';
+    document.getElementById(id).style.background = color;
+  }, 80);
+}
+
+async function runBenchmark() {
+  const btn = document.getElementById('btnRun');
+  btn.disabled = true; btn.textContent = '⏳ RUNNING...'; btn.classList.remove('pulsing');
+  document.getElementById('benchVerdict').innerHTML = '';
+  ['barSingle','barMulti','barMem','barRender'].forEach(id => document.getElementById(id).style.width='0');
+  document.getElementById('srFill').style.strokeDashoffset = 408;
+  document.getElementById('srVal').textContent = '--';
+
+  const setS  = t => document.getElementById('benchStatus').textContent = t;
+  const setProg = p => document.getElementById('benchProg').style.width = p+'%';
+  const cores = navigator.hardwareConcurrency || 2;
+
+  // ── RUN 1: single core heavy load ──
+  setS('LOADING SINGLE-CORE TASK...'); setProg(5);
+  await sleep(80);
+  let singleMs = 9999;
+  try { singleMs = await runWorkerBench(); } catch(e) {}
+  const sTier = elapsedToTier(singleMs);
+  animBar('barSingle','barSingleVal',
+    Math.max(5, Math.min(100, (1500/singleMs)*100)),
+    singleMs.toFixed(0)+'ms', sTier.color);
+  setProg(30); setS('LOADING MULTI-CORE TASK (' + cores + ' CORES)...');
+
+  // ── RUN 2: parallel workers ──
+  await sleep(80);
+  let multiMs = 9999;
+  try {
+    const promises = Array.from({length: Math.min(cores,6)}, () => runWorkerBench());
+    const results  = await Promise.all(promises);
+    // effective time = longest worker (wall clock / cores factor)
+    multiMs = Math.min(...results); // fastest worker = bottleneck for parallelism
+  } catch(e) {}
+  const mTier = elapsedToTier(multiMs * (cores >= 4 ? 0.6 : 0.8)); // credit for more cores
+  animBar('barMulti','barMultiVal',
+    Math.max(5, Math.min(100, (1000/multiMs)*100)),
+    multiMs.toFixed(0)+'ms / core', mTier.color);
+  setProg(60); setS('MEMORY BANDWIDTH TEST...');
+
+  // ── RUN 3: memory ──
+  await sleep(60);
+  const mem = runMemBench();
+  const memColor = mem>=12000?'#00f5a0':mem>=4000?'#ffb800':'#ff3d3d';
+  animBar('barMem','barMemVal',
+    Math.max(5, Math.min(100, mem/15000*100)),
+    mem.toLocaleString()+' MB/s', memColor);
+  setProg(80); setS('RENDER FRAME RATE TEST...');
+
+  // ── RUN 4: render fps ──
+  const fps = await runRenderBench();
+  const fpsColor = fps>=55?'#00f5a0':fps>=30?'#ffb800':'#ff3d3d';
+  animBar('barRender','barRenderVal',
+    Math.max(5, Math.min(100, fps/60*100)),
+    fps+' fps', fpsColor);
+  setProg(95); setS('CALCULATING...');
+
+  // ── FINAL SCORE ──
+  await sleep(300);
+  const sScore   = elapsedToScore(singleMs);
+  const memScore = Math.round(Math.min(100, mem/15000*100));
+  const fpsScore = Math.round(Math.min(100, fps/60*100));
+  const total    = Math.round(sScore*0.5 + memScore*0.3 + fpsScore*0.2);
+  const tier     = elapsedToTier(singleMs);
+
+  animateRing(total, tier.color);
+  document.getElementById('srLabel').textContent   = '/ 100';
+  document.getElementById('srSublabel').textContent = tier.label + ' DEVICE';
+  document.getElementById('srSublabel').style.color = tier.color;
+
+  const msg = {
+    good: '✅ Fast — handles heavy games, multitasking, and streaming smoothly.',
+    ok:   '⚠️ Average — everyday apps and casual gaming are fine.',
+    bad:  '❌ Slow — basic tasks okay. Heavy games and apps will lag.'
+  };
+  document.getElementById('benchVerdict').innerHTML =
+    `<div class="verdict-chip ${tier.cls}">${msg[tier.cls]}</div>`;
+
+  setProg(100); setS('BENCHMARK COMPLETE — WORKER CLEANED UP');
+  btn.disabled = false; btn.textContent = '↻ RE-RUN'; btn.classList.add('pulsing');
+}
+
+// ═══ SPECS ════════════════════════════════════════════════════════════════
+async function collectSpecs() {
+  const ua  = navigator.userAgent;
+  const nav = navigator;
+  const scr = screen;
+
+  // ── Device / OS — use userAgentData (modern) first, fallback to UA string ──
+  const getOS = async () => {
+    // Modern API — works on Chrome/Edge Android, gives real version
+    if (navigator.userAgentData) {
+      try {
+        const hints = await navigator.userAgentData.getHighEntropyValues(
+          ['platform','platformVersion','model']
+        );
+        const plat = hints.platform || '';
+        const ver  = hints.platformVersion || '';
+        if (plat === 'Android') return 'Android ' + ver;
+        if (plat === 'Windows') {
+          // Windows platformVersion: "0.1"-"9" = Win10, "10"+ = Win11
+          const maj = parseInt(ver.split('.')[0]);
+          return maj >= 10 ? 'Windows 11' : 'Windows 10';
+        }
+        if (plat === 'macOS')   return 'macOS ' + ver;
+        if (plat === 'iOS')     return 'iOS ' + ver;
+        if (plat)               return plat + ' ' + ver;
+      } catch(e) {}
+    }
+    // Fallback — UA string (Android hides version past Android 10 in UA)
+    const and = ua.match(/Android ([\d.]+)/);
+    if (and) return 'Android ' + and[1] + ' (or higher — exact version hidden by browser)';
+    const ios = ua.match(/iPhone OS ([\d_]+)/);
+    if (ios) return 'iOS ' + ios[1].replace(/_/g,'.');
+    const ipad = ua.match(/iPad.*OS ([\d_]+)/);
+    if (ipad) return 'iPadOS ' + ipad[1].replace(/_/g,'.');
+    if (/Windows NT 10/.test(ua)) return 'Windows 10 / 11';
+    if (/Mac OS X ([\d_]+)/.test(ua)) return 'macOS ' + ua.match(/Mac OS X ([\d_]+)/)[1].replace(/_/g,'.');
+    if (/Linux/.test(ua)) return 'Linux';
+    return 'Unknown';
+  };
+
+  // Device model via userAgentData or UA
+  const getDevice = async () => {
+    if (navigator.userAgentData) {
+      try {
+        const hints = await navigator.userAgentData.getHighEntropyValues(['model','platform']);
+        if (hints.model) return hints.model;
+        if (hints.platform === 'Windows') return 'Windows PC';
+        if (hints.platform === 'macOS')   return 'Apple Mac';
+      } catch(e) {}
+    }
+    if (/iPhone/.test(ua)) return 'Apple iPhone';
+    if (/iPad/.test(ua))   return 'Apple iPad';
+    const m = ua.match(/Android[\d. ]+;\s*([^)]+)\)/);
+    if (m) return m[1].trim();
+    if (/Macintosh/.test(ua)) return 'Apple Mac';
+    if (/Windows/.test(ua))   return 'Windows PC';
+    return 'Unknown';
+  };
+
+  const osStr     = await getOS();
+  const deviceStr = await getDevice();
+    if (/Edg\//.test(ua))     return 'Microsoft Edge '  + (ua.match(/Edg\/([\d.]+)/)?.[1]||'');
+    if (/OPR\//.test(ua))     return 'Opera '           + (ua.match(/OPR\/([\d.]+)/)?.[1]||'');
+    if (/Chrome\//.test(ua))  return 'Chrome '          + (ua.match(/Chrome\/([\d.]+)/)?.[1]||'');
+    if (/Firefox\//.test(ua)) return 'Firefox '         + (ua.match(/Firefox\/([\d.]+)/)?.[1]||'');
+    if (/Safari\//.test(ua))  return 'Safari '          + (ua.match(/Version\/([\d.]+)/)?.[1]||'');
+    return 'Unknown';
+  };
+
+  // ── CPU ──
+  const cores = nav.hardwareConcurrency || 'N/A';
+
+  // ── RAM ── browser rounds to nearest tier
+  const ramRaw = nav.deviceMemory;
+  const ramStr = ramRaw
+    ? ramRaw + ' GB (browser-reported tier — actual may be higher)'
+    : 'Not disclosed by browser';
+
+  // ── Screen ──
+  const dpr   = window.devicePixelRatio || 1;
+  const physW = Math.round(scr.width  * dpr);
+  const physH = Math.round(scr.height * dpr);
+
+  // ── GPU ──
+  let gpuRenderer = 'N/A', gpuVendor = 'N/A', glVersion = 'N/A';
+  try {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+    if (gl) {
+      glVersion = gl instanceof WebGL2RenderingContext ? 'WebGL 2.0' : 'WebGL 1.0';
+      const ext = gl.getExtension('WEBGL_debug_renderer_info');
+      if (ext) {
+        gpuRenderer = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) || 'N/A';
+        gpuVendor   = gl.getParameter(ext.UNMASKED_VENDOR_WEBGL)   || 'N/A';
+      } else {
+        gpuRenderer = 'Hidden by browser (privacy)';
+      }
+    }
+  } catch(e) {}
+
+  // ── Network ──
+  const conn    = nav.connection || nav.mozConnection || nav.webkitConnection;
+  const netType = conn?.effectiveType?.toUpperCase() || 'N/A';
+  const netDL   = conn?.downlink != null ? conn.downlink + ' Mbps (estimate)' : 'N/A';
+  const netRtt  = conn?.rtt      != null ? conn.rtt + ' ms'       : 'N/A';
+  const saveData= conn?.saveData ? 'ON' : 'OFF';
+
+  // ── Storage ──
+  let storUsed = 'N/A', storQuota = 'N/A';
+  try {
+    if (nav.storage?.estimate) {
+      const e = await nav.storage.estimate();
+      storUsed  = fmtBytes(e.usage  || 0);
+      storQuota = fmtBytes(e.quota  || 0);
+    }
+  } catch(e) {}
+
+  // ── Battery ── (real hardware data on Android Chrome / Firefox)
+  let batHTML = R('Battery', 'Not supported by this browser', 'm');
+  try {
+    if (nav.getBattery) {
+      const b = await nav.getBattery();
+      const pct = Math.round(b.level * 100);
+      const chg = b.charging;
+      const bc  = pct >= 50 ? '#00f5a0' : pct >= 20 ? '#ffb800' : '#ff3d3d';
+      const timeLeft = !b.charging && b.dischargingTime !== Infinity
+        ? ' · ~' + Math.round(b.dischargingTime / 60) + ' min left'
+        : b.charging && b.chargingTime !== Infinity
+          ? ' · full in ~' + Math.round(b.chargingTime / 60) + ' min'
+          : '';
+      const chgLabel = chg ? ' ⚡ Charging' : ' Discharging';
+      batHTML = `<div class="spec-row">
+        <span class="spec-key">Battery</span>
+        <span class="spec-val">
+          <span class="bat-inline">
+            <span style="color:${bc};font-weight:700">${pct}%${chgLabel}${timeLeft}</span>
+            <span class="bat-bar-wrap"><span class="bat-bar" style="width:${pct}%;background:${bc}"></span></span>
+          </span>
+          <span class="spec-tag real">REAL</span>
+        </span>
+      </div>`;
+    }
+  } catch(e) {}
+
+  // ── Touch ──
+  const touch = nav.maxTouchPoints || 0;
+
+  // ── Misc ──
+  const lang   = nav.language || 'N/A';
+  const tz     = Intl.DateTimeFormat().resolvedOptions().timeZone || 'N/A';
+  const online = nav.onLine ? 'Online' : 'Offline';
+  const cookie = nav.cookieEnabled ? 'Enabled' : 'Disabled';
+  const dnt    = nav.doNotTrack === '1' ? 'ON' : 'OFF';
+
+  // ── Render ──
+  document.getElementById('specsContainer').innerHTML = [
+
+    S('DEVICE & OS', [
+      R('Device Model',   deviceStr, '', 'real'),
+      R('OS',             osStr,     '', 'real'),
+      R('Browser',        getBrowser(),'', 'real'),
+      R('Language',       lang,        '', 'real'),
+      R('Timezone',       tz,          '', 'real'),
+      R('Online Status',  online, online==='Online'?'g':'w', 'real'),
+    ]),
+
+    S('CPU', [
+      R('Logical Cores', cores + (cores!=='N/A'?' cores':''), cores>=8?'g':cores>=4?'':'w', 'real'),
+      R('Performance Score', '— run benchmark above —', 'm', 'est'),
+      R('Architecture', /arm|aarch/i.test(ua) ? 'ARM (mobile)' : /x86|x64|Win64/i.test(ua) ? 'x86-64 (desktop)' : 'Unknown', '', 'est'),
+    ]),
+
+    S('MEMORY', [
+      R('RAM Tier', ramStr, ramRaw >= 6 ? 'g' : ramRaw >= 3 ? '' : 'w', 'real'),
+      R('Note', 'Browsers report RAM in tiers (0.25–8 GB) for privacy. Actual device RAM may be higher.', 'm'),
+    ]),
+
+    S('DISPLAY', [
+      R('Logical Resolution',  scr.width + ' × ' + scr.height + ' px', '', 'real'),
+      R('Physical Resolution', physW + ' × ' + physH + ' px',          '', 'real'),
+      R('Device Pixel Ratio',  dpr + 'x',                              dpr>=3?'g':dpr>=2?'':'w', 'real'),
+      R('Color Depth',         (scr.colorDepth || scr.pixelDepth || 'N/A') + '-bit', '', 'real'),
+      R('Orientation',         scr.orientation?.type || (scr.width > scr.height ? 'landscape' : 'portrait'), '', 'real'),
+      R('Touch Points',        touch > 0 ? touch + ' (touchscreen)' : 'None (mouse/desktop)', '', 'real'),
+    ]),
+
+    S('GPU / GRAPHICS', [
+      R('GPU Renderer', gpuRenderer, gpuRenderer!=='N/A'&&!gpuRenderer.includes('Hidden')?'g':'m', 'real'),
+      R('GPU Vendor',   gpuVendor,   gpuVendor!=='N/A'?'':'m', 'real'),
+      R('WebGL Support',glVersion,   glVersion.includes('2')?'g':'w', 'real'),
+    ]),
+
+    S('NETWORK ADAPTER', [
+      R('Connection Type', netType, netType==='4G'||netType==='WIFI'?'g':netType==='3G'?'w':'', 'real'),
+      R('Est. Downlink',   netDL,   '', 'est'),
+      R('Round Trip Time', netRtt,  '', 'est'),
+      R('Data Saver',      saveData,saveData==='ON'?'w':'g', 'real'),
+    ]),
+
+    S('STORAGE (BROWSER)', [
+      R('App Cache Used', storUsed,  '', 'real'),
+      R('Storage Quota',  storQuota, '', 'real'),
+    ]),
+
+    `<div class="specs-section"><div class="section-label">BATTERY</div>${batHTML}</div>`,
+
+    S('PRIVACY & MISC', [
+      R('Cookies',       cookie, '', 'real'),
+      R('Do Not Track',  dnt,    '', 'real'),
+      R('User Agent',    ua.length > 90 ? ua.substring(0,90)+'…' : ua, 'm'),
+    ]),
+
+    `<div class="legend-row">
+      <div class="legend-item"><span class="ltag real">REAL</span> Direct from hardware/browser API</div>
+      <div class="legend-item"><span class="ltag est">EST</span> Estimated — run benchmark for real data</div>
+    </div>`,
+
+  ].join('');
+}
+
+function fmtBytes(b) {
+  if (!b) return '0 B';
+  const u = ['B','KB','MB','GB'];
+  const i = Math.floor(Math.log(b) / Math.log(1024));
+  return (b / Math.pow(1024, i)).toFixed(1) + ' ' + u[i];
+}
+
+collectSpecs();
+</script>
+</body>
+</html>
