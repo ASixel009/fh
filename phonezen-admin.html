@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PhoneZen Admin</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 60'%3E%3Crect width='60' height='60' rx='14' fill='%23000'/%3E%3Crect x='18' y='6' width='24' height='48' rx='4' fill='none' stroke='%2300d4ff' stroke-width='2.5'/%3E%3Ccircle cx='30' cy='47' r='2.5' fill='%2300d4ff'/%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#000;--panel:#0f0f0f;--panel2:#161616;
+  --border:#1e1e1e;--border2:#2a2a2a;
+  --accent:#00d4ff;--accent-dim:rgba(0,212,255,0.10);
+  --good:#00f5a0;--good-dim:rgba(0,245,160,0.10);
+  --warn:#ffb800;--danger:#ff3d3d;--danger-dim:rgba(255,61,61,0.10);
+  --white:#fff;--grey2:#888;--grey3:#444;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{background:#000;}
+body{background:var(--bg);color:var(--white);font-family:'Rajdhani',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle,#1a1a1a 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0;}
+
+/* ── LOGIN ── */
+#loginScreen{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:#000;padding:20px;}
+.login-box{background:var(--panel);border:1px solid var(--border2);border-radius:20px;padding:36px 28px;width:100%;max-width:380px;text-align:center;position:relative;z-index:1;}
+.login-logo{font-size:1.6rem;font-weight:700;letter-spacing:4px;color:var(--white);margin-bottom:4px;}
+.login-logo span{color:var(--accent);}
+.login-sub{font-family:'Share Tech Mono',monospace;font-size:0.6rem;color:var(--grey3);letter-spacing:3px;margin-bottom:28px;}
+.login-label{font-family:'Share Tech Mono',monospace;font-size:0.6rem;color:var(--grey2);letter-spacing:2px;text-align:left;margin-bottom:5px;display:block;}
+.login-input{width:100%;background:#0a0a0a;border:1px solid var(--border2);border-radius:10px;padding:12px 14px;font-family:'Share Tech Mono',monospace;font-size:0.8rem;color:var(--white);outline:none;margin-bottom:14px;transition:border-color 0.2s;}
+.login-input:focus{border-color:var(--accent);}
+.login-btn{width:100%;background:var(--accent);color:#000;border:none;border-radius:10px;padding:13px;font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;letter-spacing:3px;cursor:pointer;transition:all 0.2s;}
+.login-btn:hover{background:#22e4ff;}
+.login-err{font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:var(--danger);margin-top:10px;min-height:18px;}
+
+/* ── LAYOUT ── */
+#adminApp{display:none;min-height:100vh;}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:220px;background:var(--panel);border-right:1px solid var(--border);z-index:10;display:flex;flex-direction:column;padding:20px 0;}
+.sidebar-logo{padding:0 20px 20px;border-bottom:1px solid var(--border);}
+.sb-logo-main{font-size:1.1rem;font-weight:700;letter-spacing:3px;color:var(--white);}
+.sb-logo-main span{color:var(--accent);}
+.sb-logo-sub{font-family:'Share Tech Mono',monospace;font-size:0.52rem;color:var(--grey3);letter-spacing:2px;margin-top:2px;}
+.sb-nav{flex:1;padding:16px 10px;display:flex;flex-direction:column;gap:3px;}
+.sb-link{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;font-family:'Share Tech Mono',monospace;font-size:0.65rem;letter-spacing:2px;color:var(--grey2);cursor:pointer;transition:all 0.2s;border:1px solid transparent;text-transform:uppercase;}
+.sb-link:hover{background:var(--panel2);color:var(--white);}
+.sb-link.active{background:var(--accent-dim);color:var(--accent);border-color:rgba(0,212,255,0.15);}
+.sb-link .icon{font-size:1rem;width:20px;text-align:center;}
+.sb-bottom{padding:16px;}
+.sb-user{font-family:'Share Tech Mono',monospace;font-size:0.58rem;color:var(--grey3);margin-bottom:8px;word-break:break-all;}
+.sb-logout{width:100%;background:transparent;border:1px solid var(--border2);color:var(--grey2);border-radius:7px;padding:7px;font-family:'Share Tech Mono',monospace;font-size:0.6rem;letter-spacing:2px;cursor:pointer;transition:all 0.2s;}
+.sb-logout:hover{border-color:var(--danger);color:var(--danger);}
+
+/* ── MAIN ── */
+.main{margin-left:220px;padding:24px;min-height:100vh;position:relative;z-index:1;}
+.page{display:none;}.page.active{display:block;}
+.page-title{font-size:1.4rem;font-weight:700;letter-spacing:4px;color:var(--white);margin-bottom:4px;}
+.page-sub{font-family:'Share Tech Mono',monospace;font-size:0.6rem;color:var(--grey3);letter-spacing:2px;margin-bottom:22px;}
+
+/* ── STAT CARDS ── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:22px;}
+.stat-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px 16px;position:relative;overflow:hidden;}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--card-c,var(--accent)),transparent);}
+.stat-label{font-family:'Share Tech Mono',monospace;font-size:0.57rem;color:var(--grey3);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}
+.stat-val{font-size:2rem;font-weight:700;color:var(--card-c,var(--accent));font-family:'Share Tech Mono',monospace;line-height:1;}
+.stat-sub{font-family:'Share Tech Mono',monospace;font-size:0.55rem;color:var(--grey3);margin-top:4px;}
+
+/* ── ANALYTICS ── */
+.analytics-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px;}
+@media(max-width:700px){.analytics-grid{grid-template-columns:1fr;}}
+.analytics-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px;}
+.ac-title{font-size:0.6rem;letter-spacing:3px;color:var(--accent);font-family:'Share Tech Mono',monospace;text-transform:uppercase;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.analytics-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #0d0d0d;}
+.analytics-row:last-child{border-bottom:none;}
+.ar-rank{font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:var(--grey3);width:22px;flex-shrink:0;}
+.ar-name{flex:1;font-size:0.82rem;font-weight:600;color:var(--white);}
+.ar-bar-wrap{width:80px;height:5px;background:#1a1a1a;border-radius:3px;overflow:hidden;}
+.ar-bar{height:100%;border-radius:3px;background:var(--accent);}
+.ar-count{font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:var(--grey2);min-width:28px;text-align:right;}
+
+/* ── PHONES TABLE ── */
+.table-wrap{background:var(--panel);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px;}
+.table-toolbar{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);}
+.tbar-title{font-size:0.6rem;letter-spacing:3px;color:var(--grey3);font-family:'Share Tech Mono',monospace;flex:1;}
+.tbar-search{background:#0a0a0a;border:1px solid var(--border2);border-radius:8px;padding:7px 12px;font-family:'Share Tech Mono',monospace;font-size:0.68rem;color:var(--white);outline:none;width:200px;}
+.tbar-search:focus{border-color:var(--accent);}
+.btn-add{background:var(--accent);color:#000;border:none;border-radius:8px;padding:7px 14px;font-family:'Rajdhani',sans-serif;font-size:0.82rem;font-weight:700;letter-spacing:2px;cursor:pointer;white-space:nowrap;transition:all 0.2s;}
+.btn-add:hover{background:#22e4ff;}
+.phone-table{width:100%;border-collapse:collapse;}
+.phone-table th{font-family:'Share Tech Mono',monospace;font-size:0.55rem;color:var(--grey3);letter-spacing:2px;text-align:left;padding:10px 14px;border-bottom:1px solid var(--border);text-transform:uppercase;}
+.phone-table td{padding:10px 14px;border-bottom:1px solid #0d0d0d;font-size:0.82rem;color:var(--white);vertical-align:middle;}
+.phone-table tr:last-child td{border-bottom:none;}
+.phone-table tr:hover td{background:#0d0d0d;}
+.phone-thumb-sm{width:30px;height:40px;object-fit:contain;border-radius:4px;background:var(--panel2);}
+.brand-chip{font-family:'Share Tech Mono',monospace;font-size:0.55rem;padding:2px 7px;border-radius:10px;background:var(--accent-dim);color:var(--accent);border:1px solid rgba(0,212,255,0.15);}
+.net-chip{font-family:'Share Tech Mono',monospace;font-size:0.55rem;padding:2px 7px;border-radius:10px;}
+.net-chip.g5{background:rgba(0,245,160,0.1);color:var(--good);border:1px solid rgba(0,245,160,0.2);}
+.net-chip.g4{background:rgba(255,184,0,0.1);color:var(--warn);border:1px solid rgba(255,184,0,0.2);}
+.action-btns{display:flex;gap:5px;}
+.btn-edit{background:transparent;border:1px solid var(--border2);color:var(--grey2);border-radius:6px;padding:4px 10px;font-family:'Share Tech Mono',monospace;font-size:0.58rem;cursor:pointer;transition:all 0.2s;}
+.btn-edit:hover{border-color:var(--accent);color:var(--accent);}
+.btn-del{background:transparent;border:1px solid var(--border2);color:var(--grey2);border-radius:6px;padding:4px 10px;font-family:'Share Tech Mono',monospace;font-size:0.58rem;cursor:pointer;transition:all 0.2s;}
+.btn-del:hover{border-color:var(--danger);color:var(--danger);}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:100;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);}
+.modal-overlay.show{display:flex;}
+.modal{background:var(--panel);border:1px solid var(--border2);border-radius:18px;padding:26px;width:100%;max-width:580px;max-height:90vh;overflow-y:auto;}
+.modal-title{font-size:1rem;font-weight:700;letter-spacing:3px;color:var(--white);margin-bottom:4px;}
+.modal-sub{font-family:'Share Tech Mono',monospace;font-size:0.58rem;color:var(--grey3);letter-spacing:2px;margin-bottom:20px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:500px){.form-grid{grid-template-columns:1fr;}}
+.form-field{display:flex;flex-direction:column;gap:5px;}
+.form-field.full{grid-column:1/-1;}
+.f-label{font-family:'Share Tech Mono',monospace;font-size:0.58rem;color:var(--grey2);letter-spacing:2px;}
+.f-input,.f-select{background:#0a0a0a;border:1px solid var(--border2);border-radius:8px;padding:10px 12px;font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--white);outline:none;transition:border-color 0.2s;width:100%;}
+.f-input:focus,.f-select:focus{border-color:var(--accent);}
+.f-select option{background:#111;}
+.f-hint{font-family:'Share Tech Mono',monospace;font-size:0.52rem;color:var(--grey3);}
+.modal-actions{display:flex;gap:8px;margin-top:20px;justify-content:flex-end;}
+.btn-cancel{background:transparent;border:1px solid var(--border2);color:var(--grey2);border-radius:8px;padding:10px 20px;font-family:'Rajdhani',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all 0.2s;}
+.btn-cancel:hover{border-color:var(--white);color:var(--white);}
+.btn-save{background:var(--accent);color:#000;border:none;border-radius:8px;padding:10px 22px;font-family:'Rajdhani',sans-serif;font-size:0.85rem;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all 0.2s;}
+.btn-save:hover{background:#22e4ff;}
+.btn-save:disabled{background:var(--grey3);cursor:not-allowed;}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;z-index:200;background:var(--panel);border:1px solid var(--border2);border-radius:10px;padding:12px 18px;font-family:'Share Tech Mono',monospace;font-size:0.68rem;color:var(--white);display:none;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,0.5);}
+.toast.show{display:flex;}
+.toast.ok{border-color:rgba(0,245,160,0.3);color:var(--good);}
+.toast.err{border-color:rgba(255,61,61,0.3);color:var(--danger);}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:14px;height:14px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block;}
+.empty-row{font-family:'Share Tech Mono',monospace;font-size:0.68rem;color:var(--grey3);text-align:center;padding:24px;}
+@media(max-width:768px){.sidebar{width:60px;}.sidebar-logo .sb-logo-main,.sidebar-logo .sb-logo-sub,.sb-link span,.sb-user,.sb-logout{display:none;}.main{margin-left:60px;}.sb-link{justify-content:center;}.sb-link .icon{width:auto;}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">PHONE<span>ZEN</span></div>
+    <div class="login-sub">// ADMIN PANEL</div>
+    <label class="login-label">EMAIL</label>
+    <input class="login-input" id="loginEmail" type="email" placeholder="admin@phonezen.com" autocomplete="email"/>
+    <label class="login-label">PASSWORD</label>
+    <input class="login-input" id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <button class="login-btn" onclick="doLogin()">SIGN IN</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- ADMIN APP -->
+<div id="adminApp">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sb-logo-main">PHONE<span>ZEN</span></div>
+      <div class="sb-logo-sub">ADMIN PANEL</div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-link active" onclick="goPage('dashboard')" id="nav-dashboard"><span class="icon">📊</span><span>Dashboard</span></div>
+      <div class="sb-link" onclick="goPage('phones')" id="nav-phones"><span class="icon">📱</span><span>Phones</span></div>
+      <div class="sb-link" onclick="goPage('analytics')" id="nav-analytics"><span class="icon">📈</span><span>Analytics</span></div>
+      <div class="sb-link" onclick="goPage('brands')" id="nav-brands"><span class="icon">🏷️</span><span>Brands</span></div>
+    </nav>
+    <div class="sb-bottom">
+      <div class="sb-user" id="sbUser">—</div>
+      <button class="sb-logout" onclick="doLogout()">LOG OUT</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-title">DASHBOARD</div>
+      <div class="page-sub">// OVERVIEW</div>
+      <div class="stat-grid" id="statGrid">
+        <div class="stat-card" style="--card-c:#00d4ff"><div class="stat-label">TOTAL PHONES</div><div class="stat-val" id="statPhones">—</div><div class="stat-sub">in database</div></div>
+        <div class="stat-card" style="--card-c:#00f5a0"><div class="stat-label">TOTAL BRANDS</div><div class="stat-val" id="statBrands">—</div><div class="stat-sub">active brands</div></div>
+        <div class="stat-card" style="--card-c:#ffb800"><div class="stat-label">TOTAL VIEWS</div><div class="stat-val" id="statViews">—</div><div class="stat-sub">specs viewed</div></div>
+        <div class="stat-card" style="--card-c:#c084fc"><div class="stat-label">COMPARISONS</div><div class="stat-val" id="statCompares">—</div><div class="stat-sub">phones compared</div></div>
+      </div>
+      <div class="analytics-grid" id="dashAnalytics">
+        <div class="analytics-card"><div class="ac-title">// MOST VIEWED</div><div id="mostViewed"><div class="empty-row">Loading...</div></div></div>
+        <div class="analytics-card"><div class="ac-title">// MOST COMPARED</div><div id="mostCompared"><div class="empty-row">Loading...</div></div></div>
+      </div>
+    </div>
+
+    <!-- PHONES -->
+    <div class="page" id="page-phones">
+      <div class="page-title">PHONES</div>
+      <div class="page-sub">// MANAGE PHONE DATABASE</div>
+      <div class="table-wrap">
+        <div class="table-toolbar">
+          <div class="tbar-title">ALL PHONES</div>
+          <input class="tbar-search" id="tableSearch" type="text" placeholder="Filter phones..." oninput="filterTable(this.value)"/>
+          <button class="btn-add" onclick="openAddModal()">+ ADD PHONE</button>
+        </div>
+        <table class="phone-table" id="phoneTable">
+          <thead>
+            <tr>
+              <th>IMG</th><th>NAME</th><th>BRAND</th><th>YEAR</th>
+              <th>CHIPSET</th><th>RAM</th><th>NETWORK</th><th>ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody id="phoneTableBody"><tr><td colspan="8" class="empty-row"><div class="spinner"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ANALYTICS -->
+    <div class="page" id="page-analytics">
+      <div class="page-title">ANALYTICS</div>
+      <div class="page-sub">// VIEWS & COMPARISONS</div>
+      <div class="analytics-grid">
+        <div class="analytics-card"><div class="ac-title">// TOP 10 MOST VIEWED</div><div id="analyticsViews"><div class="empty-row">Loading...</div></div></div>
+        <div class="analytics-card"><div class="ac-title">// TOP 10 MOST COMPARED</div><div id="analyticsCompares"><div class="empty-row">Loading...</div></div></div>
+      </div>
+    </div>
+
+    <!-- BRANDS -->
+    <div class="page" id="page-brands">
+      <div class="page-title">BRANDS</div>
+      <div class="page-sub">// MANAGE BRANDS</div>
+      <div class="table-wrap">
+        <div class="table-toolbar">
+          <div class="tbar-title">ALL BRANDS</div>
+          <button class="btn-add" onclick="openBrandModal()">+ ADD BRAND</button>
+        </div>
+        <table class="phone-table">
+          <thead><tr><th>LOGO</th><th>NAME</th><th>SLUG</th><th>PHONES</th><th>ACTIONS</th></tr></thead>
+          <tbody id="brandTableBody"><tr><td colspan="5" class="empty-row"><div class="spinner"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ADD/EDIT PHONE MODAL -->
+<div class="modal-overlay" id="phoneModal">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">ADD PHONE</div>
+    <div class="modal-sub">// FILL IN PHONE DETAILS</div>
+    <div class="form-grid">
+      <div class="form-field">
+        <label class="f-label">BRAND *</label>
+        <select class="f-select" id="fBrand">
+          <option value="">Select brand...</option>
+          <option>Apple</option><option>Asus</option><option>Huawei</option>
+          <option>iMose</option><option>Infinix</option><option>itel</option>
+          <option>OnePlus</option><option>Samsung</option><option>Tecno</option>
+          <option>vivo</option><option>Xiaomi</option><option>ZTE</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="f-label">BRAND SLUG *</label>
+        <select class="f-select" id="fBrandSlug">
+          <option value="">Select slug...</option>
+          <option value="apple">apple</option><option value="asus">asus</option>
+          <option value="huawei">huawei</option><option value="imose">imose</option>
+          <option value="infinix">infinix</option><option value="itel">itel</option>
+          <option value="oneplus">oneplus</option><option value="samsung">samsung</option>
+          <option value="tecno">tecno</option><option value="vivo">vivo</option>
+          <option value="xiaomi">xiaomi</option><option value="zte">zte</option>
+        </select>
+      </div>
+      <div class="form-field full">
+        <label class="f-label">PHONE NAME *</label>
+        <input class="f-input" id="fName" type="text" placeholder="e.g. Samsung Galaxy S25 Ultra"/>
+      </div>
+      <div class="form-field">
+        <label class="f-label">YEAR *</label>
+        <input class="f-input" id="fYear" type="number" placeholder="2025" min="2010" max="2030"/>
+      </div>
+      <div class="form-field">
+        <label class="f-label">NETWORK *</label>
+        <select class="f-select" id="fNetwork">
+          <option value="5G">5G</option>
+          <option value="4G">4G</option>
+          <option value="4G/5G">4G/5G</option>
+          <option value="4G+Satellite">4G+Satellite</option>
+        </select>
+      </div>
+      <div class="form-field full">
+        <label class="f-label">IMAGE URL</label>
+        <input class="f-input" id="fImg" type="url" placeholder="https://fdn2.gsmarena.com/vv/bigpics/..."/>
+        <span class="f-hint">Use GSMArena CDN URLs for best results</span>
+      </div>
+      <div class="form-field full">
+        <label class="f-label">DISPLAY</label>
+        <input class="f-input" id="fDisplay" type="text" placeholder="6.8&quot; QHD+ AMOLED 120Hz"/>
+      </div>
+      <div class="form-field full">
+        <label class="f-label">CHIPSET *</label>
+        <input class="f-input" id="fChipset" type="text" placeholder="Snapdragon 8 Gen 3"/>
+      </div>
+      <div class="form-field">
+        <label class="f-label">RAM *</label>
+        <input class="f-input" id="fRam" type="text" placeholder="8GB / 12GB"/>
+      </div>
+      <div class="form-field">
+        <label class="f-label">STORAGE</label>
+        <input class="f-input" id="fStorage" type="text" placeholder="256GB / 512GB"/>
+      </div>
+      <div class="form-field full">
+        <label class="f-label">REAR CAMERA</label>
+        <input class="f-input" id="fRearCam" type="text" placeholder="50MP + 12MP + 10MP"/>
+      </div>
+      <div class="form-field">
+        <label class="f-label">FRONT CAMERA</label>
+        <input class="f-input" id="fFrontCam" type="text" placeholder="32MP"/>
+      </div>
+      <div class="form-field">
+        <label class="f-label">BATTERY</label>
+        <input class="f-input" id="fBattery" type="text" placeholder="5000mAh"/>
+      </div>
+      <div class="form-field">
+        <label class="f-label">CHARGING</label>
+        <input class="f-input" id="fCharging" type="text" placeholder="45W"/>
+      </div>
+      <div class="form-field">
+        <label class="f-label">OS</label>
+        <input class="f-input" id="fOs" type="text" placeholder="Android 15"/>
+      </div>
+      <div class="form-field">
+        <label class="f-label">WEIGHT</label>
+        <input class="f-input" id="fWeight" type="text" placeholder="210g"/>
+      </div>
+      <div class="form-field">
+        <label class="f-label">THICKNESS</label>
+        <input class="f-input" id="fThickness" type="text" placeholder="8.2mm"/>
+      </div>
+      <div class="form-field full">
+        <label class="f-label">COLORS</label>
+        <input class="f-input" id="fColors" type="text" placeholder="Phantom Black / Cream White / Green"/>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('phoneModal')">CANCEL</button>
+      <button class="btn-save" id="btnSave" onclick="savePhone()">SAVE PHONE</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD BRAND MODAL -->
+<div class="modal-overlay" id="brandModal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-title">ADD BRAND</div>
+    <div class="modal-sub">// NEW BRAND ENTRY</div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div class="form-field">
+        <label class="f-label">BRAND NAME *</label>
+        <input class="f-input" id="bName" type="text" placeholder="e.g. Realme"/>
+      </div>
+      <div class="form-field">
+        <label class="f-label">SLUG *</label>
+        <input class="f-input" id="bSlug" type="text" placeholder="realme (lowercase, no spaces)"/>
+      </div>
+      <div class="form-field">
+        <label class="f-label">LOGO URL</label>
+        <input class="f-input" id="bLogo" type="url" placeholder="https://img.logo.dev/realme.com?token=..."/>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('brandModal')">CANCEL</button>
+      <button class="btn-save" onclick="saveBrand()">SAVE BRAND</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══ SUPABASE ═════════════════════════════════════════════════════════════
+const SUPABASE_URL = 'https://fvpdrcgepjqzgbrqjkyh.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_uxvv035s10Tcs8sKmxFZrA_6Z37pvhQ';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let editingId   = null;
+let allPhones   = [];
+let allBrands   = [];
+
+// Local fallback counts (from phonezen.html DB)
+const LOCAL_BRAND_COUNTS = {
+  samsung:9,apple:7,tecno:7,infinix:8,xiaomi:8,oneplus:5,
+  huawei:4,vivo:4,asus:3,itel:4,imose:2,zte:3
+};
+const LOCAL_TOTAL = Object.values(LOCAL_BRAND_COUNTS).reduce((a,b)=>a+b,0);
+
+// ═══ AUTH ═════════════════════════════════════════════════════════════════
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  const err   = document.getElementById('loginErr');
+  err.textContent = '';
+  if (!email || !pass) { err.textContent = 'Enter email and password.'; return; }
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if (error) { err.textContent = error.message; return; }
+  currentUser = data.user;
+  bootAdmin();
+}
+
+async function doLogout() {
+  await sb.auth.signOut();
+  location.reload();
+}
+
+async function checkSession() {
+  const { data } = await sb.auth.getSession();
+  if (data?.session?.user) {
+    currentUser = data.session.user;
+    bootAdmin();
+  }
+}
+
+function bootAdmin() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('adminApp').style.display = 'block';
+  document.getElementById('sbUser').textContent = currentUser.email;
+  loadDashboard();
+  loadPhones();
+  loadBrands();
+}
+
+// ═══ DASHBOARD ════════════════════════════════════════════════════════════
+async function loadDashboard() {
+  // Counts
+  let phoneCount = LOCAL_TOTAL, brandCount = 12;
+  try {
+    const { count:pc } = await sb.from('phones').select('*',{count:'exact',head:true});
+    const { count:bc } = await sb.from('brands').select('*',{count:'exact',head:true});
+    if (pc != null) phoneCount = pc + LOCAL_TOTAL;
+    if (bc != null) brandCount = bc + 12;
+  } catch(e) {}
+  document.getElementById('statPhones').textContent  = phoneCount;
+  document.getElementById('statBrands').textContent  = brandCount;
+
+  // Analytics counts
+  let views = 0, compares = 0;
+  try {
+    const { count:vc } = await sb.from('analytics').select('*',{count:'exact',head:true}).eq('event','view');
+    const { count:cc } = await sb.from('analytics').select('*',{count:'exact',head:true}).eq('event','compare');
+    if (vc!=null) views=vc;
+    if (cc!=null) compares=cc;
+  } catch(e) {}
+  document.getElementById('statViews').textContent   = views.toLocaleString();
+  document.getElementById('statCompares').textContent= compares.toLocaleString();
+
+  loadAnalyticsWidget('mostViewed',   'view',    5);
+  loadAnalyticsWidget('mostCompared', 'compare', 5);
+}
+
+async function loadAnalyticsWidget(elId, event, limit) {
+  const el = document.getElementById(elId);
+  try {
+    const { data, error } = await sb.rpc('get_top_phones', { p_event: event, p_limit: limit });
+    if (error || !data?.length) { el.innerHTML='<div class="empty-row">No data yet</div>'; return; }
+    const max = data[0].cnt;
+    el.innerHTML = data.map((r,i) => `
+      <div class="analytics-row">
+        <span class="ar-rank">#${i+1}</span>
+        <span class="ar-name">${r.name||r.phone_id}</span>
+        <div class="ar-bar-wrap"><div class="ar-bar" style="width:${Math.round(r.cnt/max*100)}%"></div></div>
+        <span class="ar-count">${r.cnt}</span>
+      </div>`).join('');
+  } catch(e) { el.innerHTML='<div class="empty-row">Connect Supabase to see data</div>'; }
+}
+
+// ═══ PHONES ═══════════════════════════════════════════════════════════════
+async function loadPhones() {
+  try {
+    const { data } = await sb.from('phones').select('*').order('created_at',{ascending:false});
+    allPhones = data || [];
+  } catch(e) { allPhones = []; }
+  renderPhoneTable(allPhones);
+}
+
+function renderPhoneTable(phones) {
+  const tbody = document.getElementById('phoneTableBody');
+  if (!phones.length) {
+    tbody.innerHTML = `<tr><td colspan="8" class="empty-row">No phones in Supabase yet — add your first phone or they live in the local fallback DB.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = phones.map(p => {
+    const s = p.specs||{};
+    const netCls = (s.network||'').includes('5G') ? 'g5' : 'g4';
+    const imgHtml = p.image_url
+      ? `<img class="phone-thumb-sm" src="${p.image_url}" onerror="this.style.display='none'">`
+      : '📱';
+    return `<tr>
+      <td>${imgHtml}</td>
+      <td style="font-weight:600">${p.name}</td>
+      <td><span class="brand-chip">${p.brand||p.brand_slug||'—'}</span></td>
+      <td style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;color:var(--grey2)">${p.year||'—'}</td>
+      <td style="font-family:'Share Tech Mono',monospace;font-size:0.68rem;color:var(--grey2)">${s.chipset||'—'}</td>
+      <td style="font-family:'Share Tech Mono',monospace;font-size:0.72rem">${s.ram||'—'}</td>
+      <td><span class="net-chip ${netCls}">${s.network||'—'}</span></td>
+      <td><div class="action-btns">
+        <button class="btn-edit" onclick="openEditModal('${p.id}')">EDIT</button>
+        <button class="btn-del"  onclick="deletePhone('${p.id}','${p.name}')">DEL</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+function filterTable(q) {
+  const ql = q.toLowerCase();
+  const filtered = allPhones.filter(p =>
+    p.name.toLowerCase().includes(ql) ||
+    (p.brand||'').toLowerCase().includes(ql) ||
+    ((p.specs?.chipset)||'').toLowerCase().includes(ql)
+  );
+  renderPhoneTable(filtered);
+}
+
+// ═══ ADD / EDIT ═══════════════════════════════════════════════════════════
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'ADD PHONE';
+  clearForm();
+  document.getElementById('phoneModal').classList.add('show');
+}
+
+function openEditModal(id) {
+  const p = allPhones.find(x => x.id === id);
+  if (!p) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = 'EDIT PHONE';
+  const s = p.specs||{};
+  setF('fBrand',     p.brand||'');
+  setF('fBrandSlug', p.brand_slug||'');
+  setF('fName',      p.name||'');
+  setF('fYear',      p.year||'');
+  setF('fNetwork',   s.network||'5G');
+  setF('fImg',       p.image_url||'');
+  setF('fDisplay',   s.display||'');
+  setF('fChipset',   s.chipset||'');
+  setF('fRam',       s.ram||'');
+  setF('fStorage',   s.storage||'');
+  setF('fRearCam',   s.rear_cam||'');
+  setF('fFrontCam',  s.front_cam||'');
+  setF('fBattery',   s.battery||'');
+  setF('fCharging',  s.charging||'');
+  setF('fOs',        s.os||'');
+  setF('fWeight',    s.weight||'');
+  setF('fThickness', s.thickness||'');
+  setF('fColors',    s.colors||'');
+  document.getElementById('phoneModal').classList.add('show');
+}
+
+async function savePhone() {
+  const btn = document.getElementById('btnSave');
+  const name   = gF('fName').trim();
+  const brand  = gF('fBrand');
+  const slug   = gF('fBrandSlug');
+  const year   = parseInt(gF('fYear'));
+  const chipset= gF('fChipset').trim();
+  const ram    = gF('fRam').trim();
+  if (!name||!brand||!slug||!year||!chipset||!ram) {
+    showToast('Fill in all required fields (*)','err'); return;
+  }
+
+  btn.disabled = true; btn.textContent = 'SAVING...';
+
+  const payload = {
+    name, brand, brand_slug: slug, year,
+    image_url: gF('fImg')||null,
+    specs: {
+      display:    gF('fDisplay'),  chipset,       ram,
+      storage:    gF('fStorage'),  rear_cam:      gF('fRearCam'),
+      front_cam:  gF('fFrontCam'), battery:       gF('fBattery'),
+      charging:   gF('fCharging'), os:            gF('fOs'),
+      network:    gF('fNetwork'),  weight:        gF('fWeight'),
+      thickness:  gF('fThickness'),colors:        gF('fColors'),
+    }
+  };
+
+  try {
+    let error;
+    if (editingId) {
+      ({ error } = await sb.from('phones').update(payload).eq('id', editingId));
+    } else {
+      ({ error } = await sb.from('phones').insert(payload));
+    }
+    if (error) throw error;
+    showToast(editingId ? 'Phone updated ✓' : 'Phone added ✓', 'ok');
+    closeModal('phoneModal');
+    loadPhones();
+    loadDashboard();
+  } catch(e) {
+    showToast(e.message||'Save failed', 'err');
+  }
+  btn.disabled = false; btn.textContent = 'SAVE PHONE';
+}
+
+async function deletePhone(id, name) {
+  if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+  try {
+    const { error } = await sb.from('phones').delete().eq('id', id);
+    if (error) throw error;
+    showToast('Phone deleted', 'ok');
+    loadPhones(); loadDashboard();
+  } catch(e) { showToast(e.message, 'err'); }
+}
+
+function clearForm() {
+  ['fBrand','fBrandSlug','fName','fYear','fImg','fDisplay','fChipset',
+   'fRam','fStorage','fRearCam','fFrontCam','fBattery','fCharging',
+   'fOs','fWeight','fThickness','fColors'].forEach(id => setF(id,''));
+  setF('fNetwork','5G');
+}
+
+// ═══ BRANDS ═══════════════════════════════════════════════════════════════
+async function loadBrands() {
+  try {
+    const { data } = await sb.from('brands').select('*').order('name');
+    allBrands = data || [];
+  } catch(e) { allBrands = []; }
+  renderBrandTable();
+}
+
+function renderBrandTable() {
+  const tbody = document.getElementById('brandTableBody');
+  // Combine local + remote brands
+  const localBrands = [
+    {name:'Apple',slug:'apple'},{name:'Asus',slug:'asus'},{name:'Huawei',slug:'huawei'},
+    {name:'iMose',slug:'imose'},{name:'Infinix',slug:'infinix'},{name:'itel',slug:'itel'},
+    {name:'OnePlus',slug:'oneplus'},{name:'Samsung',slug:'samsung'},{name:'Tecno',slug:'tecno'},
+    {name:'vivo',slug:'vivo'},{name:'Xiaomi',slug:'xiaomi'},{name:'ZTE',slug:'zte'},
+  ];
+  const all = [...localBrands, ...allBrands.filter(b => !localBrands.some(l => l.slug===b.slug))];
+  tbody.innerHTML = all.map(b => {
+    const cnt = LOCAL_BRAND_COUNTS[b.slug] || 0;
+    const logo = b.logo_url || `https://img.logo.dev/${b.slug}.com?token=pk_VAZ_1e7rQm6c7OWmEW7VuA&size=64`;
+    return `<tr>
+      <td><img src="${logo}" style="width:28px;height:28px;object-fit:contain;border-radius:6px;background:#fff;padding:2px" onerror="this.style.display='none'"></td>
+      <td style="font-weight:700">${b.name}</td>
+      <td><span class="brand-chip">${b.slug}</span></td>
+      <td style="font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--grey2)">${cnt}${allPhones.filter(p=>p.brand_slug===b.slug).length ? '+'+allPhones.filter(p=>p.brand_slug===b.slug).length : ''}</td>
+      <td>${b.id?`<button class="btn-del" onclick="deleteBrand('${b.id}','${b.name}')">DEL</button>`:'<span style="font-family:\'Share Tech Mono\',monospace;font-size:0.55rem;color:var(--grey3)">LOCAL</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function openBrandModal() { document.getElementById('brandModal').classList.add('show'); }
+
+async function saveBrand() {
+  const name = document.getElementById('bName').value.trim();
+  const slug = document.getElementById('bSlug').value.trim().toLowerCase().replace(/\s+/g,'-');
+  const logo = document.getElementById('bLogo').value.trim();
+  if (!name||!slug) { showToast('Name and slug required','err'); return; }
+  try {
+    const { error } = await sb.from('brands').insert({ name, slug, logo_url: logo||null });
+    if (error) throw error;
+    showToast('Brand added ✓','ok');
+    closeModal('brandModal');
+    loadBrands();
+  } catch(e) { showToast(e.message,'err'); }
+}
+
+async function deleteBrand(id, name) {
+  if (!confirm(`Delete brand "${name}"?`)) return;
+  try {
+    const { error } = await sb.from('brands').delete().eq('id', id);
+    if (error) throw error;
+    showToast('Brand deleted','ok');
+    loadBrands();
+  } catch(e) { showToast(e.message,'err'); }
+}
+
+// ═══ ANALYTICS PAGE ════════════════════════════════════════════════════════
+async function loadAnalyticsPage() {
+  loadAnalyticsWidget('analyticsViews',   'view',    10);
+  loadAnalyticsWidget('analyticsCompares','compare', 10);
+}
+
+// ═══ NAVIGATION ═══════════════════════════════════════════════════════════
+function goPage(name) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sb-link').forEach(l=>l.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('nav-'+name).classList.add('active');
+  if (name==='analytics') loadAnalyticsPage();
+}
+
+// ═══ HELPERS ══════════════════════════════════════════════════════════════
+const gF  = id => document.getElementById(id).value;
+const setF = (id,v) => { const el=document.getElementById(id); if(el)el.value=v; };
+
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+let toastTimer;
+function showToast(msg, type='ok') {
+  const t = document.getElementById('toast');
+  t.textContent = (type==='ok'?'✓ ':'✕ ') + msg;
+  t.className = `toast show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+// Click outside modal to close
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if(e.target===o) o.classList.remove('show'); });
+});
+
+// ═══ INIT ═════════════════════════════════════════════════════════════════
+checkSession();
+</script>
+</body>
+</html>

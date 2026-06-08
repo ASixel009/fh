@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PhoneZen — Phone Specs</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 60'%3E%3Crect width='60' height='60' rx='14' fill='%23000'/%3E%3Crect x='18' y='6' width='24' height='48' rx='4' fill='none' stroke='%2300d4ff' stroke-width='2.5'/%3E%3Ccircle cx='30' cy='47' r='2.5' fill='%2300d4ff'/%3E%3Crect x='24' y='10' width='12' height='2' rx='1' fill='%2300d4ff' opacity='0.5'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#000">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#000;--panel:#0f0f0f;--panel2:#161616;
+  --border:#1e1e1e;--border2:#2a2a2a;
+  --accent:#00d4ff;--accent-dim:rgba(0,212,255,0.10);--accent-glow:0 0 22px rgba(0,212,255,0.3);
+  --good:#00f5a0;--good-dim:rgba(0,245,160,0.12);
+  --warn:#ffb800;--danger:#ff3d3d;
+  --white:#fff;--grey2:#888;--grey3:#444;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{background:#000;}
+body{background:var(--bg);color:var(--white);font-family:'Rajdhani',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px 14px 48px;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle,#1a1a1a 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0;}
+body::after{content:'';position:fixed;top:0;left:50%;transform:translateX(-50%);width:700px;height:300px;background:radial-gradient(ellipse,rgba(0,212,255,0.04) 0%,transparent 70%);pointer-events:none;z-index:0;}
+.container{position:relative;z-index:1;width:100%;max-width:720px;}
+
+/* HEADER */
+header{display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:20px;}
+.logo-row{display:flex;align-items:center;gap:14px;}
+.pz-icon{width:52px;height:52px;flex-shrink:0;}
+.logo-text{display:flex;flex-direction:column;align-items:flex-start;}
+.logo-main{font-size:2rem;font-weight:700;letter-spacing:5px;line-height:1;color:var(--white);}
+.logo-main span{color:var(--accent);text-shadow:var(--accent-glow);}
+.logo-sub{font-family:'Share Tech Mono',monospace;font-size:0.58rem;letter-spacing:3px;color:var(--grey3);margin-top:3px;}
+
+.back-btn{display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px solid var(--border2);color:var(--grey2);border-radius:8px;padding:6px 12px;font-family:'Share Tech Mono',monospace;font-size:0.62rem;letter-spacing:2px;cursor:pointer;text-decoration:none;transition:all 0.2s;margin-bottom:14px;align-self:flex-start;}
+.back-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+/* SEARCH */
+.search-wrap{position:relative;margin-bottom:14px;}
+.search-input{width:100%;background:var(--panel);border:1px solid var(--border2);border-radius:12px;padding:13px 44px;font-family:'Share Tech Mono',monospace;font-size:0.78rem;color:var(--white);outline:none;transition:border-color 0.2s;}
+.search-input::placeholder{color:var(--grey3);}
+.search-input:focus{border-color:var(--accent);}
+.search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:1rem;opacity:0.4;pointer-events:none;}
+.search-clear{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--grey3);cursor:pointer;font-size:1rem;display:none;}
+.search-clear.show{display:block;}
+
+/* COMPARE BAR */
+.compare-bar{background:var(--panel);border:1px solid var(--border2);border-radius:12px;padding:10px 14px;margin-bottom:14px;display:none;align-items:center;gap:10px;}
+.compare-bar.show{display:flex;}
+.compare-slots{display:flex;gap:8px;flex:1;}
+.compare-slot{flex:1;background:var(--panel2);border:1px dashed var(--border2);border-radius:8px;padding:6px 10px;font-family:'Share Tech Mono',monospace;font-size:0.6rem;color:var(--grey3);text-align:center;min-height:34px;display:flex;align-items:center;justify-content:center;}
+.compare-slot.filled{border-color:var(--accent);color:var(--white);border-style:solid;position:relative;}
+.remove-btn{position:absolute;top:-7px;right:-7px;width:16px;height:16px;background:var(--danger);border-radius:50%;border:none;color:#fff;font-size:0.55rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.btn-compare{background:var(--accent);color:#000;border:none;border-radius:8px;padding:8px 14px;font-family:'Rajdhani',sans-serif;font-size:0.82rem;font-weight:700;letter-spacing:2px;cursor:pointer;white-space:nowrap;transition:all 0.2s;}
+.btn-compare:disabled{background:var(--grey3);cursor:not-allowed;}
+.btn-compare:not(:disabled):hover{background:#22e4ff;}
+
+/* TABS */
+.tabs{display:flex;gap:2px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:3px;margin-bottom:14px;}
+.tab{flex:1;padding:8px 4px;text-align:center;font-family:'Share Tech Mono',monospace;font-size:0.62rem;letter-spacing:2px;color:var(--grey2);cursor:pointer;border-radius:7px;transition:all 0.2s;text-transform:uppercase;border:1px solid transparent;}
+.tab.active{background:var(--panel2);color:var(--accent);border-color:var(--border2);box-shadow:var(--accent-glow);}
+
+/* VIEWS */
+.view{display:none;}.view.active{display:block;}
+
+/* BRAND GRID */
+.brand-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-bottom:12px;}
+.brand-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 8px;text-align:center;cursor:pointer;transition:all 0.22s;display:flex;flex-direction:column;align-items:center;gap:8px;position:relative;overflow:hidden;}
+.brand-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:0;transition:opacity 0.2s;}
+.brand-card:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:0 6px 24px rgba(0,212,255,0.12);}
+.brand-card:hover::before{opacity:1;}
+.brand-logo{width:44px;height:44px;border-radius:10px;object-fit:contain;background:#fff;padding:5px;}
+.brand-logo-fb{width:44px;height:44px;border-radius:10px;background:var(--panel2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:var(--accent);font-weight:700;letter-spacing:1px;}
+.brand-name{font-size:0.85rem;font-weight:700;letter-spacing:1px;color:var(--white);}
+.brand-count{font-family:'Share Tech Mono',monospace;font-size:0.55rem;color:var(--grey3);}
+
+/* PHONE LIST */
+.list-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.btn-back-list{background:transparent;border:1px solid var(--border2);color:var(--grey2);border-radius:7px;padding:6px 10px;font-family:'Share Tech Mono',monospace;font-size:0.6rem;letter-spacing:2px;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+.btn-back-list:hover{border-color:var(--accent);color:var(--accent);}
+.list-title{font-size:1.1rem;font-weight:700;letter-spacing:3px;color:var(--white);}
+
+.phone-list{display:flex;flex-direction:column;gap:8px;}
+.phone-item{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all 0.2s;}
+.phone-item:hover{border-color:var(--accent);background:var(--panel2);}
+.phone-thumb{width:42px;height:56px;object-fit:contain;border-radius:6px;background:var(--panel2);flex-shrink:0;}
+.phone-thumb-fb{width:42px;height:56px;background:var(--panel2);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;border:1px solid var(--border);}
+.phone-info{flex:1;min-width:0;}
+.phone-name{font-size:0.92rem;font-weight:700;color:var(--white);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.phone-meta{font-family:'Share Tech Mono',monospace;font-size:0.58rem;color:var(--grey2);}
+.phone-meta2{font-family:'Share Tech Mono',monospace;font-size:0.56rem;color:var(--grey3);margin-top:2px;}
+.phone-actions{display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0;}
+.btn-specs{background:var(--accent-dim);border:1px solid rgba(0,212,255,0.2);color:var(--accent);border-radius:6px;padding:4px 10px;font-family:'Share Tech Mono',monospace;font-size:0.56rem;letter-spacing:1px;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+.btn-specs:hover{background:rgba(0,212,255,0.2);}
+.btn-cmp{background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.2);color:#a78bfa;border-radius:6px;padding:4px 10px;font-family:'Share Tech Mono',monospace;font-size:0.56rem;letter-spacing:1px;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+.btn-cmp:hover{background:rgba(124,58,237,0.2);}
+.btn-cmp.added{background:var(--good-dim);border-color:rgba(0,245,160,0.25);color:var(--good);}
+
+/* SPECS */
+.specs-hero{display:flex;gap:16px;align-items:flex-start;margin-bottom:18px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;}
+.specs-img{width:90px;height:120px;object-fit:contain;border-radius:8px;background:var(--panel2);flex-shrink:0;}
+.specs-img-fb{width:90px;height:120px;background:var(--panel2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:3rem;flex-shrink:0;}
+.specs-title-wrap{flex:1;}
+.specs-name{font-size:1.35rem;font-weight:700;color:var(--white);line-height:1.2;margin-bottom:4px;}
+.specs-brand{font-family:'Share Tech Mono',monospace;font-size:0.62rem;color:var(--accent);letter-spacing:2px;margin-bottom:10px;}
+.specs-pills{display:flex;gap:5px;flex-wrap:wrap;}
+.pill{font-family:'Share Tech Mono',monospace;font-size:0.52rem;padding:3px 8px;border-radius:20px;border:1px solid var(--border2);color:var(--grey2);}
+.pill.hl{border-color:rgba(0,212,255,0.25);color:var(--accent);background:var(--accent-dim);}
+.pill.good{border-color:rgba(0,245,160,0.25);color:var(--good);background:var(--good-dim);}
+
+.specs-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+@media(max-width:500px){.specs-grid{grid-template-columns:1fr;}}
+.spec-block{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px;}
+.sb-title{font-size:0.57rem;letter-spacing:3px;color:var(--accent);text-transform:uppercase;font-family:'Share Tech Mono',monospace;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.sb-row{display:flex;justify-content:space-between;align-items:flex-start;padding:5px 0;border-bottom:1px solid #0d0d0d;gap:10px;}
+.sb-row:last-child{border-bottom:none;}
+.sb-k{font-family:'Share Tech Mono',monospace;font-size:0.58rem;color:var(--grey2);flex-shrink:0;}
+.sb-v{font-family:'Share Tech Mono',monospace;font-size:0.64rem;color:var(--white);font-weight:600;text-align:right;word-break:break-word;}
+.sb-v.g{color:var(--good);}
+.sb-v.w{color:var(--warn);}
+
+/* COMPARE */
+.cmp-phones{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.cmp-head{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center;}
+.cmp-head-img{width:60px;height:80px;object-fit:contain;margin:0 auto 8px;display:block;border-radius:6px;}
+.cmp-head-name{font-size:0.88rem;font-weight:700;color:var(--white);margin-bottom:2px;}
+.cmp-head-brand{font-family:'Share Tech Mono',monospace;font-size:0.55rem;color:var(--accent);letter-spacing:2px;}
+.cmp-section-title{font-size:0.57rem;letter-spacing:3px;color:var(--grey3);text-transform:uppercase;font-family:'Share Tech Mono',monospace;padding:8px 0 6px;border-top:1px solid var(--border);margin-bottom:6px;}
+.cmp-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px;}
+.cmp-cell{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:9px 10px;text-align:center;}
+.cmp-cell.winner{background:var(--good-dim);border-color:rgba(0,245,160,0.25);}
+.cmp-key{font-family:'Share Tech Mono',monospace;font-size:0.5rem;color:var(--grey3);margin-bottom:3px;letter-spacing:1px;}
+.cmp-val{font-family:'Share Tech Mono',monospace;font-size:0.7rem;font-weight:700;color:var(--white);}
+.cmp-cell.winner .cmp-val{color:var(--good);}
+
+/* SEARCH & LOADING */
+.no-results{font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--grey3);text-align:center;padding:30px 0;}
+.loading{font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:var(--grey3);text-align:center;padding:24px 0;display:flex;align-items:center;justify-content:center;gap:8px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:14px;height:14px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;}
+.source-badge{font-family:'Share Tech Mono',monospace;font-size:0.52rem;color:var(--grey3);text-align:center;margin-top:10px;}
+.source-badge span{color:var(--accent);}
+
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.15}}
+.ldot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--grey3);animation:blink 1s infinite;margin:0 2px;}
+footer{text-align:center;font-family:'Share Tech Mono',monospace;font-size:0.57rem;color:var(--grey3);margin-top:20px;letter-spacing:3px;}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="logo-row">
+    <svg class="pz-icon" viewBox="0 0 52 52" fill="none">
+      <defs>
+        <filter id="pglow"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <linearGradient id="pgrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#00d4ff"/><stop offset="100%" stop-color="#7c3aed"/></linearGradient>
+      </defs>
+      <rect x="11" y="3" width="30" height="46" rx="5" fill="#0d0d0d" stroke="#1e1e1e" stroke-width="1.5"/>
+      <rect x="14" y="9" width="24" height="32" rx="2" fill="#111" stroke="#00d4ff" stroke-width="0.75" opacity="0.8"/>
+      <line x1="17" y1="15" x2="35" y2="15" stroke="#00d4ff" stroke-width="0.75" stroke-linecap="round" opacity="0.4"/>
+      <line x1="17" y1="19" x2="30" y2="19" stroke="#00d4ff" stroke-width="0.75" stroke-linecap="round" opacity="0.25"/>
+      <rect x="17" y="27" width="3" height="7" rx="1" fill="#00d4ff" opacity="0.35"/>
+      <rect x="22" y="23" width="3" height="11" rx="1" fill="#00d4ff" opacity="0.55"/>
+      <rect x="27" y="19" width="3" height="15" rx="1" fill="#00d4ff" opacity="0.75"/>
+      <rect x="32" y="15" width="3" height="19" rx="1" fill="#00d4ff" filter="url(#pglow)"/>
+      <rect x="20" y="5" width="12" height="2" rx="1" fill="#2a2a2a"/>
+      <circle cx="26" cy="44" r="2.5" fill="none" stroke="#00d4ff" stroke-width="1" filter="url(#pglow)"/>
+    </svg>
+    <div class="logo-text">
+      <div class="logo-main">PHONE<span>ZEN</span></div>
+      <div class="logo-sub">// PHONE SPECS & COMPARISON</div>
+    </div>
+  </div>
+</header>
+
+<a class="back-btn" href="index.html">← DASHBOARD</a>
+
+<div class="search-wrap">
+  <span class="search-icon">🔍</span>
+  <input class="search-input" id="searchInput" type="text" placeholder="Search by name, brand, chipset..." oninput="handleSearch(this.value)" autocomplete="off"/>
+  <button class="search-clear" id="searchClear" onclick="clearSearch()">✕</button>
+</div>
+
+<div class="compare-bar" id="compareBar">
+  <div class="compare-slots">
+    <div class="compare-slot" id="slot0">Phone 1</div>
+    <div class="compare-slot" id="slot1">Phone 2</div>
+  </div>
+  <button class="btn-compare" id="btnCompare" onclick="showComparison()" disabled>COMPARE</button>
+</div>
+
+<div class="tabs">
+  <div class="tab active" id="tabBrands" onclick="switchTab('brands')">📱 BRANDS</div>
+  <div class="tab" id="tabSearch" onclick="switchTab('search')">🔍 SEARCH</div>
+</div>
+
+<div class="view active" id="viewBrands">
+  <div class="brand-grid" id="brandGrid"></div>
+</div>
+
+<div class="view" id="viewList">
+  <div class="list-header">
+    <button class="btn-back-list" onclick="showView('viewBrands');currentBrand=null;">← BRANDS</button>
+    <div class="list-title" id="listTitle">—</div>
+  </div>
+  <div class="phone-list" id="phoneList"></div>
+</div>
+
+<div class="view" id="viewSpecs">
+  <div class="list-header">
+    <button class="btn-back-list" onclick="goBackFromSpecs()">← BACK</button>
+    <div class="list-title">SPECIFICATIONS</div>
+  </div>
+  <div id="specsContent"></div>
+</div>
+
+<div class="view" id="viewSearch">
+  <div class="phone-list" id="searchResults"></div>
+</div>
+
+<div class="view" id="viewCompare">
+  <div class="list-header">
+    <button class="btn-back-list" onclick="goBackFromCompare()">← BACK</button>
+    <div class="list-title">COMPARISON</div>
+  </div>
+  <div id="compareContent"></div>
+</div>
+
+</div>
+<footer>PHONEZEN &nbsp;•&nbsp; BUILT BY SYNCRODEV</footer>
+
+<script>
+// ═══ SUPABASE CONFIG ══════════════════════════════════════════════════════
+// Replace these with your actual Supabase project URL and anon key
+const SUPABASE_URL  = 'https://fvpdrcgepjqzgbrqjkyh.supabase.co';
+const SUPABASE_KEY  = 'sb_publishable_uxvv035s10Tcs8sKmxFZrA_6Z37pvhQ';
+let sb = null;
+try { sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e) {}
+
+// ═══ BRANDS ═══════════════════════════════════════════════════════════════
+const BRANDS = [
+  {slug:'apple',    name:'Apple',    logo:'https://img.logo.dev/apple.com?token=pk_VAZ_1e7rQm6c7OWmEW7VuA&size=128'},
+  {slug:'asus',     name:'Asus',     logo:'https://img.logo.dev/asus.com?token=pk_VAZ_1e7rQm6c7OWmEW7VuA&size=128'},
+  {slug:'huawei',   name:'Huawei',   logo:'https://img.logo.dev/huawei.com?token=pk_VAZ_1e7rQm6c7OWmEW7VuA&size=128'},
+  {slug:'imose',    name:'iMose',    logo:''},
+  {slug:'infinix',  name:'Infinix',  logo:'https://img.logo.dev/infinixmobility.com?token=pk_VAZ_1e7rQm6c7OWmEW7VuA&size=128'},
+  {slug:'itel',     name:'itel',     logo:'https://img.logo.dev/itel-mobile.com?token=pk_VAZ_1e7rQm6c7OWmEW7VuA&size=128'},
+  {slug:'oneplus',  name:'OnePlus',  logo:'https://img.logo.dev/oneplus.com?token=pk_VAZ_1e7rQm6c7OWmEW7VuA&size=128'},
+  {slug:'samsung',  name:'Samsung',  logo:'https://img.logo.dev/samsung.com?token=pk_VAZ_1e7rQm6c7OWmEW7VuA&size=128'},
+  {slug:'tecno',    name:'Tecno',    logo:'https://img.logo.dev/tecno-mobile.com?token=pk_VAZ_1e7rQm6c7OWmEW7VuA&size=128'},
+  {slug:'vivo',     name:'vivo',     logo:'https://img.logo.dev/vivo.com?token=pk_VAZ_1e7rQm6c7OWmEW7VuA&size=128'},
+  {slug:'xiaomi',   name:'Xiaomi',   logo:'https://img.logo.dev/xiaomi.com?token=pk_VAZ_1e7rQm6c7OWmEW7VuA&size=128'},
+  {slug:'zte',      name:'ZTE',      logo:'https://img.logo.dev/zte.com.cn?token=pk_VAZ_1e7rQm6c7OWmEW7VuA&size=128'},
+];
+
+// ═══ FALLBACK DATABASE ═══════════════════════════════════════════════════
+// phone images: real GSMArena CDN URLs
+const DB = {
+samsung:[
+  {id:'ss24u', name:'Galaxy S24 Ultra',  year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/samsung-galaxy-s24-ultra-7329.jpg',
+   specs:{display:'6.8" QHD+ AMOLED 120Hz',chipset:'Snapdragon 8 Gen 3',ram:'12GB',storage:'256GB–1TB',rear_cam:'200MP+12MP+10MP+10MP',front_cam:'12MP',battery:'5000mAh',charging:'45W',os:'Android 14',network:'5G',weight:'232g',thickness:'8.6mm',colors:'Titanium Black/Gray/Violet/Yellow'}},
+  {id:'ss24p', name:'Galaxy S24+',       year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/samsung-galaxy-s24-plus-7330.jpg',
+   specs:{display:'6.7" QHD+ AMOLED 120Hz',chipset:'Snapdragon 8 Gen 3',ram:'12GB',storage:'256GB/512GB',rear_cam:'50MP+10MP+12MP',front_cam:'12MP',battery:'4900mAh',charging:'45W',os:'Android 14',network:'5G',weight:'196g',thickness:'7.7mm',colors:'Cobalt Violet/Amber Yellow/Onyx Black/Marble Gray'}},
+  {id:'ss24',  name:'Galaxy S24',        year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/samsung-galaxy-s24-7331.jpg',
+   specs:{display:'6.2" FHD+ AMOLED 120Hz',chipset:'Snapdragon 8 Gen 3',ram:'8GB',storage:'128GB/256GB',rear_cam:'50MP+12MP+10MP',front_cam:'12MP',battery:'4000mAh',charging:'25W',os:'Android 14',network:'5G',weight:'167g',thickness:'7.6mm',colors:'Cobalt Violet/Amber Yellow/Onyx Black/Marble Gray'}},
+  {id:'sa55',  name:'Galaxy A55',        year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/samsung-galaxy-a55-12231.jpg',
+   specs:{display:'6.6" FHD+ AMOLED 120Hz',chipset:'Exynos 1480',ram:'8GB',storage:'128GB/256GB',rear_cam:'50MP+12MP+5MP',front_cam:'32MP',battery:'5000mAh',charging:'25W',os:'Android 14',network:'5G',weight:'213g',thickness:'8.2mm',colors:'Awesome Iceblue/Lilac/Navy/Lemon'}},
+  {id:'sa35',  name:'Galaxy A35',        year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/samsung-galaxy-a35-12232.jpg',
+   specs:{display:'6.6" FHD+ AMOLED 120Hz',chipset:'Exynos 1380',ram:'6GB/8GB',storage:'128GB/256GB',rear_cam:'50MP+8MP+5MP',front_cam:'13MP',battery:'5000mAh',charging:'25W',os:'Android 14',network:'5G',weight:'210g',thickness:'8.2mm',colors:'Awesome Iceblue/Lilac/Navy/Lemon'}},
+  {id:'sa15',  name:'Galaxy A15',        year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/samsung-galaxy-a15-12161.jpg',
+   specs:{display:'6.5" FHD+ AMOLED 90Hz',chipset:'Helio G99',ram:'4GB/6GB/8GB',storage:'128GB/256GB',rear_cam:'50MP+5MP+2MP',front_cam:'13MP',battery:'5000mAh',charging:'25W',os:'Android 14',network:'4G',weight:'200g',thickness:'8.4mm',colors:'Blue Black/Light Blue/Light Green/Yellow'}},
+  {id:'sa05s', name:'Galaxy A05s',       year:2023, img:'https://fdn2.gsmarena.com/vv/bigpics/samsung-galaxy-a05s-12062.jpg',
+   specs:{display:'6.7" FHD+ LCD 90Hz',chipset:'Snapdragon 680',ram:'4GB/6GB',storage:'64GB/128GB',rear_cam:'50MP+2MP+2MP',front_cam:'13MP',battery:'5000mAh',charging:'25W',os:'Android 13',network:'4G',weight:'195g',thickness:'8.8mm',colors:'Black/Light Violet/Light Green'}},
+  {id:'sf15',  name:'Galaxy F15',        year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/samsung-galaxy-f15-5g-12187.jpg',
+   specs:{display:'6.5" FHD+ AMOLED 90Hz',chipset:'Dimensity 6100+',ram:'6GB',storage:'128GB',rear_cam:'50MP+5MP+2MP',front_cam:'13MP',battery:'6000mAh',charging:'25W',os:'Android 14',network:'5G',weight:'205g',thickness:'8.4mm',colors:'Ash Black/Jazz Blue/Jazzy Green'}},
+  {id:'sm15',  name:'Galaxy M15',        year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/samsung-galaxy-m15-5g-12186.jpg',
+   specs:{display:'6.5" FHD+ AMOLED 90Hz',chipset:'Dimensity 6100+',ram:'4GB/6GB',storage:'128GB',rear_cam:'50MP+5MP+2MP',front_cam:'13MP',battery:'6000mAh',charging:'25W',os:'Android 14',network:'5G',weight:'207g',thickness:'8.4mm',colors:'Blue Topaz/Gray/Celestine Blue'}},
+],
+apple:[
+  {id:'ai16pm',name:'iPhone 16 Pro Max', year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/apple-iphone-16-pro-max-12819.jpg',
+   specs:{display:'6.9" LTPO OLED 120Hz',chipset:'Apple A18 Pro',ram:'8GB',storage:'256GB–1TB',rear_cam:'48MP+48MP+12MP',front_cam:'12MP',battery:'4685mAh',charging:'30W',os:'iOS 18',network:'5G',weight:'227g',thickness:'8.3mm',colors:'Black/White/Natural/Desert Titanium'}},
+  {id:'ai16p', name:'iPhone 16 Pro',     year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/apple-iphone-16-pro-12818.jpg',
+   specs:{display:'6.3" LTPO OLED 120Hz',chipset:'Apple A18 Pro',ram:'8GB',storage:'128GB–1TB',rear_cam:'48MP+48MP+12MP',front_cam:'12MP',battery:'3582mAh',charging:'30W',os:'iOS 18',network:'5G',weight:'199g',thickness:'8.3mm',colors:'Black/White/Natural/Desert Titanium'}},
+  {id:'ai16',  name:'iPhone 16',         year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/apple-iphone-16-12817.jpg',
+   specs:{display:'6.1" OLED 60Hz',chipset:'Apple A18',ram:'8GB',storage:'128GB–512GB',rear_cam:'48MP+12MP',front_cam:'12MP',battery:'3561mAh',charging:'25W',os:'iOS 18',network:'5G',weight:'170g',thickness:'7.8mm',colors:'Black/White/Pink/Teal/Ultramarine'}},
+  {id:'ai15pm',name:'iPhone 15 Pro Max', year:2023, img:'https://fdn2.gsmarena.com/vv/bigpics/apple-iphone-15-pro-max-12179.jpg',
+   specs:{display:'6.7" LTPO OLED 120Hz',chipset:'Apple A17 Pro',ram:'8GB',storage:'256GB–1TB',rear_cam:'48MP+12MP+12MP',front_cam:'12MP',battery:'4422mAh',charging:'27W',os:'iOS 17',network:'5G',weight:'221g',thickness:'8.3mm',colors:'Black/White/Natural/Blue Titanium'}},
+  {id:'ai15',  name:'iPhone 15',         year:2023, img:'https://fdn2.gsmarena.com/vv/bigpics/apple-iphone-15-12177.jpg',
+   specs:{display:'6.1" OLED 60Hz',chipset:'Apple A16 Bionic',ram:'6GB',storage:'128GB–512GB',rear_cam:'48MP+12MP',front_cam:'12MP',battery:'3349mAh',charging:'20W',os:'iOS 17',network:'5G',weight:'171g',thickness:'7.8mm',colors:'Black/Blue/Green/Yellow/Pink'}},
+  {id:'ai14',  name:'iPhone 14',         year:2022, img:'https://fdn2.gsmarena.com/vv/bigpics/apple-iphone-14-11856.jpg',
+   specs:{display:'6.1" OLED 60Hz',chipset:'Apple A15 Bionic',ram:'6GB',storage:'128GB–512GB',rear_cam:'12MP+12MP',front_cam:'12MP',battery:'3279mAh',charging:'20W',os:'iOS 16',network:'5G',weight:'172g',thickness:'7.8mm',colors:'Blue/Purple/Midnight/Starlight/Red/Yellow'}},
+  {id:'ai13',  name:'iPhone 13',         year:2021, img:'https://fdn2.gsmarena.com/vv/bigpics/apple-iphone-13-10825.jpg',
+   specs:{display:'6.1" OLED 60Hz',chipset:'Apple A15 Bionic',ram:'4GB',storage:'128GB–512GB',rear_cam:'12MP+12MP',front_cam:'12MP',battery:'3227mAh',charging:'20W',os:'iOS 15',network:'5G',weight:'174g',thickness:'7.7mm',colors:'Pink/Blue/Midnight/Starlight/Green/Red'}},
+],
+tecno:[
+  {id:'tcp30p', name:'Camon 30 Pro',      year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/tecno-camon-30-pro-12547.jpg',
+   specs:{display:'6.78" FHD+ AMOLED 144Hz',chipset:'Dimensity 7020',ram:'8GB/12GB',storage:'256GB',rear_cam:'50MP+50MP+2MP',front_cam:'50MP',battery:'5000mAh',charging:'45W',os:'Android 14',network:'5G',weight:'194g',thickness:'7.8mm',colors:'Midnight Shadow/Stunning Night/Golden Hour'}},
+  {id:'tcp30',  name:'Camon 30',          year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/tecno-camon-30-12387.jpg',
+   specs:{display:'6.78" FHD+ AMOLED 144Hz',chipset:'Helio G99 Ultimate',ram:'8GB',storage:'256GB',rear_cam:'50MP+2MP',front_cam:'50MP',battery:'5000mAh',charging:'33W',os:'Android 14',network:'4G',weight:'197g',thickness:'7.8mm',colors:'Midnight Shadow/Stunning Night/Golden Hour'}},
+  {id:'tsp30p', name:'Spark 30 Pro',      year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/tecno-spark-30-pro-12546.jpg',
+   specs:{display:'6.78" FHD+ AMOLED 120Hz',chipset:'Helio G100',ram:'8GB',storage:'256GB',rear_cam:'50MP+AI',front_cam:'32MP',battery:'5000mAh',charging:'33W',os:'Android 14',network:'4G',weight:'195g',thickness:'7.9mm',colors:'Starfall Black/Cactus Green/Magenta'}},
+  {id:'tsp30',  name:'Spark 30',          year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/tecno-spark-30-12548.jpg',
+   specs:{display:'6.78" FHD+ IPS 90Hz',chipset:'Helio G88',ram:'4GB/8GB',storage:'128GB/256GB',rear_cam:'48MP',front_cam:'8MP',battery:'5000mAh',charging:'18W',os:'Android 14',network:'4G',weight:'192g',thickness:'8.0mm',colors:'Starfall Black/Cactus Green/Magenta'}},
+  {id:'tpova6', name:'Pova 6',            year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/tecno-pova-6-12388.jpg',
+   specs:{display:'6.78" FHD+ IPS 90Hz',chipset:'Helio G91 Ultimate',ram:'8GB',storage:'128GB',rear_cam:'50MP+AI',front_cam:'8MP',battery:'6000mAh',charging:'18W',os:'Android 14',network:'4G',weight:'205g',thickness:'8.9mm',colors:'Aurora Cloud/Nebula Purple/Starfall Black'}},
+  {id:'tpova6p',name:'Pova 6 Pro',        year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/tecno-pova-6-pro-12386.jpg',
+   specs:{display:'6.78" FHD+ AMOLED 120Hz',chipset:'Dimensity 6080',ram:'8GB/12GB',storage:'256GB',rear_cam:'108MP+AI',front_cam:'32MP',battery:'6000mAh',charging:'45W',os:'Android 14',network:'5G',weight:'200g',thickness:'8.5mm',colors:'Comet Green/Meteor Black/Moonlit Purple'}},
+  {id:'tph10p', name:'Phantom X2 Pro',    year:2023, img:'https://fdn2.gsmarena.com/vv/bigpics/tecno-phantom-x2-pro-11853.jpg',
+   specs:{display:'6.8" FHD+ AMOLED 120Hz',chipset:'Dimensity 9000',ram:'12GB',storage:'256GB',rear_cam:'50MP+50MP+13MP',front_cam:'32MP',battery:'5160mAh',charging:'45W',os:'Android 13',network:'5G',weight:'220g',thickness:'8.7mm',colors:'Mars Orange/Stardust Grey'}},
+],
+infinix:[
+  {id:'in40p5g',name:'Note 40 Pro+ 5G',  year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/infinix-note-40-pro-plus-5g-12412.jpg',
+   specs:{display:'6.78" FHD+ AMOLED 144Hz',chipset:'Dimensity 7020',ram:'12GB',storage:'256GB',rear_cam:'108MP+2MP+AI',front_cam:'32MP',battery:'5000mAh',charging:'100W',os:'Android 14',network:'5G',weight:'191g',thickness:'7.9mm',colors:'Vintage Green/Obsidian Black/Titanium Gold'}},
+  {id:'in40p',  name:'Note 40 Pro',      year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/infinix-note-40-pro-12411.jpg',
+   specs:{display:'6.78" FHD+ AMOLED 144Hz',chipset:'Helio G99 Ultimate',ram:'8GB/12GB',storage:'256GB',rear_cam:'108MP+2MP',front_cam:'32MP',battery:'5000mAh',charging:'70W',os:'Android 14',network:'4G',weight:'193g',thickness:'7.9mm',colors:'Vintage Green/Obsidian Black/Titanium Gold'}},
+  {id:'in40',   name:'Note 40',          year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/infinix-note-40-12410.jpg',
+   specs:{display:'6.78" FHD+ AMOLED 120Hz',chipset:'Helio G99',ram:'8GB',storage:'256GB',rear_cam:'108MP+2MP',front_cam:'16MP',battery:'5000mAh',charging:'45W',os:'Android 14',network:'4G',weight:'189g',thickness:'7.9mm',colors:'Vintage Green/Obsidian Black/Titanium Gold'}},
+  {id:'ihot40p',name:'Hot 40 Pro',       year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/infinix-hot-40-pro-12184.jpg',
+   specs:{display:'6.78" FHD+ IPS 90Hz',chipset:'Helio G99',ram:'8GB',storage:'256GB',rear_cam:'108MP',front_cam:'32MP',battery:'5000mAh',charging:'33W',os:'Android 13',network:'4G',weight:'190g',thickness:'7.8mm',colors:'Volcanic Black/Palm Green/Horizon Gold'}},
+  {id:'ihot40', name:'Hot 40',           year:2023, img:'https://fdn2.gsmarena.com/vv/bigpics/infinix-hot-40-12183.jpg',
+   specs:{display:'6.78" FHD+ IPS 90Hz',chipset:'Helio G85',ram:'4GB/8GB',storage:'128GB/256GB',rear_cam:'50MP+AI',front_cam:'8MP',battery:'5000mAh',charging:'18W',os:'Android 13',network:'4G',weight:'192g',thickness:'8.3mm',colors:'Volcanic Black/Palm Green/Horizon Gold/Starlit Gold'}},
+  {id:'izero30',name:'Zero 30',          year:2023, img:'https://fdn2.gsmarena.com/vv/bigpics/infinix-zero-30-4g-12065.jpg',
+   specs:{display:'6.78" FHD+ AMOLED 144Hz',chipset:'Helio G99',ram:'8GB/12GB',storage:'256GB',rear_cam:'108MP+AI',front_cam:'50MP',battery:'5000mAh',charging:'45W',os:'Android 13',network:'4G',weight:'186g',thickness:'7.6mm',colors:'Misty Lavender/Sunset Gold/Rome Green/Pearlescent White'}},
+  {id:'ismart8', name:'Smart 8',         year:2023, img:'https://fdn2.gsmarena.com/vv/bigpics/infinix-smart-8-12063.jpg',
+   specs:{display:'6.6" HD+ IPS 90Hz',chipset:'Helio G36',ram:'3GB/4GB',storage:'64GB/128GB',rear_cam:'50MP',front_cam:'8MP',battery:'5000mAh',charging:'10W',os:'Android 13 Go',network:'4G',weight:'192g',thickness:'8.9mm',colors:'Crystal Violet/Galaxy White/Timber Black'}},
+  {id:'igt10p', name:'GT 10 Pro',        year:2023, img:'https://fdn2.gsmarena.com/vv/bigpics/infinix-gt-10-pro-12066.jpg',
+   specs:{display:'6.67" FHD+ AMOLED 144Hz',chipset:'Dimensity 8050',ram:'8GB',storage:'256GB',rear_cam:'108MP+AI',front_cam:'32MP',battery:'5000mAh',charging:'45W',os:'Android 13',network:'5G',weight:'190g',thickness:'7.9mm',colors:'Cyber Black/Mirage Silver/Zeno Blue'}},
+],
+xiaomi:[
+  {id:'xmi14u', name:'Xiaomi 14 Ultra',  year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/xiaomi-14-ultra-12283.jpg',
+   specs:{display:'6.73" LTPO AMOLED 120Hz',chipset:'Snapdragon 8 Gen 3',ram:'16GB',storage:'512GB',rear_cam:'50MP+50MP+50MP+50MP',front_cam:'32MP',battery:'5000mAh',charging:'90W',os:'Android 14',network:'5G',weight:'229g',thickness:'9.4mm',colors:'Black/White/Titanium Gray'}},
+  {id:'xmi14',  name:'Xiaomi 14',        year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/xiaomi-14-12282.jpg',
+   specs:{display:'6.36" LTPO AMOLED 120Hz',chipset:'Snapdragon 8 Gen 3',ram:'12GB/16GB',storage:'256GB/512GB',rear_cam:'50MP+50MP+50MP',front_cam:'32MP',battery:'4610mAh',charging:'90W',os:'Android 14',network:'5G',weight:'193g',thickness:'8.2mm',colors:'Black/White/Jade Green/Pink'}},
+  {id:'xrn13p', name:'Redmi Note 13 Pro+',year:2023,img:'https://fdn2.gsmarena.com/vv/bigpics/xiaomi-redmi-note-13-pro-plus-12159.jpg',
+   specs:{display:'6.67" FHD+ AMOLED 120Hz',chipset:'Dimensity 7200 Ultra',ram:'8GB/12GB',storage:'256GB/512GB',rear_cam:'200MP+8MP+2MP',front_cam:'16MP',battery:'5000mAh',charging:'120W',os:'Android 13',network:'5G',weight:'205g',thickness:'8.9mm',colors:'Midnight Black/Aurora Purple/Coral Purple/Fusion White'}},
+  {id:'xrn13p4g',name:'Redmi Note 13 Pro',year:2023,img:'https://fdn2.gsmarena.com/vv/bigpics/xiaomi-redmi-note-13-pro-4g-12158.jpg',
+   specs:{display:'6.67" FHD+ AMOLED 120Hz',chipset:'Helio G99 Ultra',ram:'8GB/12GB',storage:'256GB',rear_cam:'200MP+8MP+2MP',front_cam:'16MP',battery:'5100mAh',charging:'67W',os:'Android 13',network:'4G',weight:'187g',thickness:'8.0mm',colors:'Midnight Black/Arctic White/Aurora Purple/Coral Purple'}},
+  {id:'xrn13',  name:'Redmi Note 13',    year:2023, img:'https://fdn2.gsmarena.com/vv/bigpics/xiaomi-redmi-note-13-4g-12157.jpg',
+   specs:{display:'6.67" FHD+ AMOLED 120Hz',chipset:'Snapdragon 685',ram:'6GB/8GB',storage:'128GB/256GB',rear_cam:'108MP+8MP+2MP',front_cam:'16MP',battery:'5000mAh',charging:'33W',os:'Android 13',network:'4G',weight:'174g',thickness:'7.6mm',colors:'Arctic White/Midnight Black/Graphite Gray/Panda White'}},
+  {id:'xr13c',  name:'Redmi 13C',        year:2023, img:'https://fdn2.gsmarena.com/vv/bigpics/xiaomi-redmi-13c-12156.jpg',
+   specs:{display:'6.74" HD+ IPS 90Hz',chipset:'Helio G85',ram:'4GB/6GB/8GB',storage:'128GB/256GB',rear_cam:'50MP+AI',front_cam:'8MP',battery:'5000mAh',charging:'18W',os:'Android 13',network:'4G',weight:'192g',thickness:'8.1mm',colors:'Starfall Black/Stardust Gray/Clover Green'}},
+  {id:'xpocox6p',name:'POCO X6 Pro',     year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/xiaomi-poco-x6-pro-12281.jpg',
+   specs:{display:'6.67" FHD+ AMOLED 120Hz',chipset:'Dimensity 8300-Ultra',ram:'8GB/12GB',storage:'256GB',rear_cam:'64MP+8MP+2MP',front_cam:'16MP',battery:'5000mAh',charging:'67W',os:'Android 14',network:'5G',weight:'186g',thickness:'8.3mm',colors:'Black/Grey/Yellow'}},
+  {id:'xpocox6', name:'POCO X6',         year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/xiaomi-poco-x6-12280.jpg',
+   specs:{display:'6.67" FHD+ AMOLED 120Hz',chipset:'Snapdragon 7s Gen 2',ram:'8GB/12GB',storage:'256GB',rear_cam:'64MP+8MP+2MP',front_cam:'16MP',battery:'5100mAh',charging:'67W',os:'Android 14',network:'5G',weight:'181g',thickness:'8.0mm',colors:'Black/Blue/White'}},
+],
+oneplus:[
+  {id:'op12r',  name:'OnePlus 12R',      year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/oneplus-12r-12285.jpg',
+   specs:{display:'6.78" FHD+ AMOLED 120Hz',chipset:'Snapdragon 8 Gen 2',ram:'8GB/16GB',storage:'128GB/256GB',rear_cam:'50MP+8MP+2MP',front_cam:'16MP',battery:'5500mAh',charging:'80W',os:'Android 14',network:'5G',weight:'207g',thickness:'8.8mm',colors:'Iron Gray/Cool Blue'}},
+  {id:'op12',   name:'OnePlus 12',       year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/oneplus-12-12284.jpg',
+   specs:{display:'6.82" LTPO AMOLED 120Hz',chipset:'Snapdragon 8 Gen 3',ram:'12GB/16GB',storage:'256GB/512GB',rear_cam:'50MP+48MP+64MP',front_cam:'32MP',battery:'5400mAh',charging:'100W',os:'Android 14',network:'5G',weight:'220g',thickness:'9.2mm',colors:'Flowy Emerald/Silky Black'}},
+  {id:'opn4',   name:'OnePlus Nord 4',   year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/oneplus-nord-4-12549.jpg',
+   specs:{display:'6.74" AMOLED 120Hz',chipset:'Snapdragon 7+ Gen 3',ram:'12GB/16GB',storage:'256GB/512GB',rear_cam:'50MP+8MP',front_cam:'16MP',battery:'5500mAh',charging:'100W',os:'Android 14',network:'5G',weight:'199g',thickness:'8.2mm',colors:'Mercurial Silver/Oasis Green/Obsidian Midnight'}},
+  {id:'opnce4', name:'Nord CE4',         year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/oneplus-nord-ce-4-12551.jpg',
+   specs:{display:'6.67" AMOLED 120Hz',chipset:'Snapdragon 7s Gen 2',ram:'8GB',storage:'128GB/256GB',rear_cam:'50MP+2MP',front_cam:'16MP',battery:'5500mAh',charging:'100W',os:'Android 14',network:'5G',weight:'187g',thickness:'7.9mm',colors:'Dark Chrome/Celadon Marble'}},
+  {id:'opnce3', name:'Nord CE3',         year:2023, img:'https://fdn2.gsmarena.com/vv/bigpics/oneplus-nord-ce-3-lite-5g-12067.jpg',
+   specs:{display:'6.72" FHD+ LCD 120Hz',chipset:'Snapdragon 695',ram:'8GB',storage:'128GB/256GB',rear_cam:'108MP+2MP+2MP',front_cam:'16MP',battery:'5000mAh',charging:'67W',os:'Android 13',network:'5G',weight:'195g',thickness:'8.3mm',colors:'Pastel Lime/Aqua Surge/Chromatic Gray'}},
+],
+huawei:[
+  {id:'hwp60p', name:'P60 Pro',          year:2023, img:'https://fdn2.gsmarena.com/vv/bigpics/huawei-p60-pro-11842.jpg',
+   specs:{display:'6.67" LTPO OLED 120Hz',chipset:'Snapdragon 8+ Gen 1 (4G)',ram:'8GB/12GB',storage:'256GB/512GB',rear_cam:'48MP+13MP+48MP',front_cam:'13MP',battery:'4815mAh',charging:'88W',os:'HarmonyOS 3.1',network:'4G',weight:'200g',thickness:'8.3mm',colors:'Rococo Pearl/Black/Green/Purple'}},
+  {id:'hwn12',  name:'Nova 12',          year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/huawei-nova-12-12390.jpg',
+   specs:{display:'6.88" OLED 120Hz',chipset:'Kirin 8000',ram:'8GB/12GB',storage:'256GB/512GB',rear_cam:'50MP+8MP',front_cam:'60MP',battery:'4600mAh',charging:'66W',os:'HarmonyOS 4',network:'4G',weight:'188g',thickness:'6.9mm',colors:'Black/Pink/Purple/Green'}},
+  {id:'hwn12p', name:'Nova 12 Pro',      year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/huawei-nova-12-pro-12391.jpg',
+   specs:{display:'6.76" LTPO OLED 120Hz',chipset:'Kirin 8000',ram:'12GB',storage:'512GB',rear_cam:'50MP+8MP+2MP',front_cam:'60MP+8MP',battery:'4600mAh',charging:'100W',os:'HarmonyOS 4',network:'4G',weight:'195g',thickness:'7.0mm',colors:'Black/Peacock Blue/White/Purple'}},
+  {id:'hwmt60p',name:'Mate 60 Pro',      year:2023, img:'https://fdn2.gsmarena.com/vv/bigpics/huawei-mate-60-pro-12181.jpg',
+   specs:{display:'6.82" LTPO OLED 120Hz',chipset:'Kirin 9010',ram:'12GB',storage:'256GB/512GB/1TB',rear_cam:'50MP+13MP+48MP',front_cam:'13MP',battery:'5000mAh',charging:'88W',os:'HarmonyOS 4',network:'4G+Satellite',weight:'225g',thickness:'8.5mm',colors:'Black/White/Purple/Brown/Green'}},
+],
+vivo:[
+  {id:'vvx100u',name:'X100 Ultra',       year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/vivo-x100-ultra-12553.jpg',
+   specs:{display:'6.78" LTPO AMOLED 120Hz',chipset:'Snapdragon 8 Gen 3',ram:'16GB',storage:'512GB/1TB',rear_cam:'50MP+50MP+200MP',front_cam:'32MP',battery:'5500mAh',charging:'100W',os:'Android 14',network:'5G',weight:'228g',thickness:'9.3mm',colors:'Titanium Grey/Titanium White'}},
+  {id:'vvx100p',name:'X100 Pro',         year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/vivo-x100-pro-12287.jpg',
+   specs:{display:'6.78" LTPO AMOLED 120Hz',chipset:'Dimensity 9300',ram:'12GB/16GB',storage:'256GB/512GB',rear_cam:'50MP+50MP+50MP',front_cam:'32MP',battery:'5400mAh',charging:'100W',os:'Android 14',network:'5G',weight:'221g',thickness:'9.4mm',colors:'Asteroid Black/Titanium Gray/Stardust Blue'}},
+  {id:'vvy200p',name:'Y200 Pro',         year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/vivo-y200-pro-12555.jpg',
+   specs:{display:'6.67" FHD+ AMOLED 120Hz',chipset:'Snapdragon 4 Gen 2',ram:'8GB/12GB',storage:'128GB/256GB',rear_cam:'50MP+8MP+2MP',front_cam:'16MP',battery:'5000mAh',charging:'44W',os:'Android 14',network:'4G/5G',weight:'187g',thickness:'8.0mm',colors:'Mint Green/Titanium Silver/Titanium Gold'}},
+  {id:'vvy28',  name:'Y28',              year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/vivo-y28-12556.jpg',
+   specs:{display:'6.68" FHD+ IPS 90Hz',chipset:'Helio G85',ram:'6GB/8GB',storage:'128GB/256GB',rear_cam:'50MP+2MP',front_cam:'8MP',battery:'6000mAh',charging:'15W',os:'Android 14',network:'4G',weight:'193g',thickness:'8.5mm',colors:'Vintage Red/Ice Blue/Lychee Candy Pink'}},
+],
+asus:[
+  {id:'asrog8p',name:'ROG Phone 8 Pro',  year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/asus-rog-phone-8-pro-12286.jpg',
+   specs:{display:'6.78" FHD+ AMOLED 165Hz',chipset:'Snapdragon 8 Gen 3',ram:'16GB/24GB',storage:'512GB/1TB',rear_cam:'50MP+13MP+32MP',front_cam:'32MP',battery:'5500mAh',charging:'65W',os:'Android 14',network:'5G',weight:'225g',thickness:'8.9mm',colors:'Phantom Black/Storm White'}},
+  {id:'aszf11u',name:'Zenfone 11 Ultra', year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/asus-zenfone-11-ultra-12289.jpg',
+   specs:{display:'6.78" LTPO AMOLED 144Hz',chipset:'Snapdragon 8 Gen 3',ram:'12GB/16GB',storage:'256GB/512GB',rear_cam:'50MP+13MP+32MP',front_cam:'32MP',battery:'5800mAh',charging:'65W',os:'Android 14',network:'5G',weight:'224g',thickness:'8.9mm',colors:'Skyline Blue/Misty Gray/Desert Sand/Eternal Black'}},
+  {id:'aszf10', name:'Zenfone 10',       year:2023, img:'https://fdn2.gsmarena.com/vv/bigpics/asus-zenfone-10-11882.jpg',
+   specs:{display:'5.9" FHD+ AMOLED 144Hz',chipset:'Snapdragon 8 Gen 2',ram:'8GB/16GB',storage:'128GB/256GB/512GB',rear_cam:'50MP+13MP',front_cam:'32MP',battery:'4300mAh',charging:'30W',os:'Android 13',network:'5G',weight:'172g',thickness:'9.4mm',colors:'Midnight Black/Aurora Green/Eclipse Red/Starry Blue/White'}},
+],
+itel:[
+  {id:'itp55',  name:'P55',              year:2023, img:'https://fdn2.gsmarena.com/vv/bigpics/itel-p55-12180.jpg',
+   specs:{display:'6.78" HD+ IPS 90Hz',chipset:'Unisoc T606',ram:'8GB',storage:'128GB',rear_cam:'50MP+AI',front_cam:'8MP',battery:'5000mAh',charging:'18W',os:'Android 13',network:'4G',weight:'195g',thickness:'8.6mm',colors:'Brilliant Black/Dreamy Blue/Awesome Gold'}},
+  {id:'its24',  name:'S24',              year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/itel-s24-12550.jpg',
+   specs:{display:'6.78" FHD+ AMOLED 90Hz',chipset:'Unisoc T618',ram:'8GB',storage:'128GB/256GB',rear_cam:'50MP',front_cam:'16MP',battery:'5000mAh',charging:'18W',os:'Android 14',network:'4G',weight:'191g',thickness:'8.1mm',colors:'Dreamy Blue/Midnight Jade/Starry Black'}},
+  {id:'ita70',  name:'A70',              year:2023, img:'https://fdn2.gsmarena.com/vv/bigpics/itel-a70-12068.jpg',
+   specs:{display:'6.6" HD+ IPS 60Hz',chipset:'Unisoc SC9863A',ram:'2GB/3GB',storage:'32GB/64GB',rear_cam:'5MP',front_cam:'5MP',battery:'5000mAh',charging:'10W',os:'Android 13 Go',network:'4G',weight:'183g',thickness:'8.6mm',colors:'Gradation Purple/Gradation Blue/Gradation Green/Black'}},
+  {id:'itp40',  name:'P40',              year:2023, img:'https://fdn2.gsmarena.com/vv/bigpics/itel-p40-12069.jpg',
+   specs:{display:'6.6" HD+ IPS 60Hz',chipset:'Unisoc SC9832E',ram:'3GB',storage:'64GB',rear_cam:'8MP+AI',front_cam:'5MP',battery:'6000mAh',charging:'10W',os:'Android 13 Go',network:'4G',weight:'194g',thickness:'9.1mm',colors:'Deep Sea Blue/Gradation Cyan/Gradation Green/Starry Black'}},
+],
+imose:[
+  {id:'imtm3u', name:'Titan M3 Ultra',   year:2023, img:'',
+   specs:{display:'6.7" FHD+ AMOLED 120Hz',chipset:'Unisoc T618',ram:'8GB',storage:'256GB',rear_cam:'64MP+8MP+2MP',front_cam:'16MP',battery:'5000mAh',charging:'33W',os:'Android 13',network:'4G',weight:'190g',thickness:'8.2mm',colors:'Titanium Black/Moonlight Silver'}},
+  {id:'ims8p',  name:'S8 Pro',           year:2024, img:'',
+   specs:{display:'6.6" FHD+ IPS 90Hz',chipset:'Unisoc T616',ram:'6GB/8GB',storage:'128GB',rear_cam:'50MP+2MP',front_cam:'8MP',battery:'5000mAh',charging:'18W',os:'Android 13',network:'4G',weight:'185g',thickness:'8.0mm',colors:'Classic Black/Royal Blue/Elegant Gold'}},
+],
+zte:[
+  {id:'zbv50d', name:'Blade V50 Design', year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/zte-blade-v50-design-12393.jpg',
+   specs:{display:'6.67" FHD+ AMOLED 120Hz',chipset:'Snapdragon 4 Gen 2',ram:'8GB/12GB',storage:'256GB',rear_cam:'108MP+5MP+2MP',front_cam:'16MP',battery:'5000mAh',charging:'33W',os:'Android 14',network:'5G',weight:'189g',thickness:'7.9mm',colors:'Morning Flower/Midnight Black/Ocean Blue'}},
+  {id:'znz60u', name:'nubia Z60 Ultra',  year:2024, img:'https://fdn2.gsmarena.com/vv/bigpics/zte-nubia-z60-ultra-12288.jpg',
+   specs:{display:'6.8" AMOLED 144Hz',chipset:'Snapdragon 8 Gen 3',ram:'12GB/16GB',storage:'256GB–1TB',rear_cam:'50MP+35MP+64MP',front_cam:'12MP (under display)',battery:'6000mAh',charging:'80W',os:'Android 14',network:'5G',weight:'246g',thickness:'8.8mm',colors:'Black/White/Purple'}},
+  {id:'znz50s', name:'nubia Z50S Pro',   year:2023, img:'https://fdn2.gsmarena.com/vv/bigpics/zte-nubia-z50s-pro-12070.jpg',
+   specs:{display:'6.67" FHD+ AMOLED 144Hz',chipset:'Snapdragon 8 Gen 2',ram:'12GB/16GB',storage:'256GB/512GB/1TB',rear_cam:'35MP+50MP+64MP',front_cam:'16MP',battery:'5000mAh',charging:'80W',os:'Android 13',network:'5G',weight:'204g',thickness:'8.3mm',colors:'Starry Night/Time Witness/Dark Night'}},
+],
+};
+
+const ALL_PHONES = Object.values(DB).flat();
+let compareList = [];
+let currentBrand = null;
+let specsFrom = 'brands';
+
+// ═══ COMPARE WIN LOGIC ════════════════════════════════════════════════════
+// Extract first numeric value from a string like "50MP+48MP+12MP" or "5000mAh"
+function extractNum(str='') {
+  const m = str.match(/[\d.]+/);
+  return m ? parseFloat(m[0]) : null;
+}
+
+// Fields where higher = better
+const HIGHER_BETTER = ['display','ram','storage','rear_cam','front_cam','battery','charging'];
+// Fields where lower = better
+const LOWER_BETTER  = ['weight','thickness'];
+
+function getWinner(key, va, vb) {
+  const na = extractNum(va), nb = extractNum(vb);
+  if (na === null || nb === null || na === nb) return null;
+  if (HIGHER_BETTER.includes(key)) return na > nb ? 'a' : 'b';
+  if (LOWER_BETTER.includes(key))  return na < nb ? 'a' : 'b';
+  return null;
+}
+
+// ═══ SUPABASE FETCH ═══════════════════════════════════════════════════════
+async function fetchFromSupabase(brand_slug) {
+  if (!sb || SUPABASE_URL === 'YOUR_SUPABASE_URL') return null;
+  try {
+    const { data, error } = await sb.from('phones')
+      .select('*').eq('brand_slug', brand_slug).order('year', { ascending: false });
+    if (error) return null;
+    return data;
+  } catch(e) { return null; }
+}
+
+async function trackView(phone_id) {
+  if (!sb || SUPABASE_URL === 'YOUR_SUPABASE_URL') return;
+  try { await sb.from('analytics').insert({ phone_id, event: 'view' }); } catch(e) {}
+}
+
+async function trackCompare(id_a, id_b) {
+  if (!sb || SUPABASE_URL === 'YOUR_SUPABASE_URL') return;
+  try { await sb.from('analytics').insert([{ phone_id:id_a, event:'compare' },{ phone_id:id_b, event:'compare' }]); } catch(e) {}
+}
+
+// ═══ RENDER BRANDS ════════════════════════════════════════════════════════
+function renderBrands() {
+  document.getElementById('brandGrid').innerHTML = BRANDS.map(b => {
+    const count = (DB[b.slug]||[]).length;
+    const logoHtml = b.logo
+      ? `<img class="brand-logo" src="${b.logo}" alt="${b.name}" onerror="this.outerHTML='<div class=brand-logo-fb>${b.name.substring(0,2).toUpperCase()}</div>'">`
+      : `<div class="brand-logo-fb">${b.name.substring(0,2).toUpperCase()}</div>`;
+    return `<div class="brand-card" onclick="openBrand('${b.slug}','${b.name}')">
+      ${logoHtml}
+      <div class="brand-name">${b.name}</div>
+      <div class="brand-count">${count} phones</div>
+    </div>`;
+  }).join('');
+}
+
+// ═══ OPEN BRAND ═══════════════════════════════════════════════════════════
+async function openBrand(slug, name) {
+  currentBrand = { slug, name };
+  specsFrom = 'list';
+  document.getElementById('listTitle').textContent = name.toUpperCase();
+  document.getElementById('phoneList').innerHTML = `<div class="loading"><div class="spinner"></div>LOADING...</div>`;
+  showView('viewList');
+
+  // Try Supabase first
+  const remote = await fetchFromSupabase(slug);
+  const phones  = (remote && remote.length) ? remote : (DB[slug]||[]);
+  const source  = (remote && remote.length) ? 'supabase' : 'local';
+
+  document.getElementById('phoneList').innerHTML =
+    phones.length ? phones.map(p => phoneItemHTML(p)).join('')
+    : '<div class="no-results">// No phones found.</div>';
+
+  if (source === 'supabase') {
+    document.getElementById('phoneList').insertAdjacentHTML('afterbegin',
+      `<div class="source-badge">Data from <span>Supabase</span></div>`);
+  }
+}
+
+// ═══ PHONE ITEM HTML ══════════════════════════════════════════════════════
+function phoneItemHTML(p) {
+  const inCmp = compareList.some(c => c.id === p.id);
+  const imgHtml = p.img
+    ? `<img class="phone-thumb" src="${p.img}" alt="${p.name}" onerror="this.outerHTML='<div class=phone-thumb-fb>📱</div>'">`
+    : `<div class="phone-thumb-fb">📱</div>`;
+  const s = p.specs||{};
+  return `<div class="phone-item">
+    ${imgHtml}
+    <div class="phone-info">
+      <div class="phone-name">${p.name}</div>
+      <div class="phone-meta">${p.brand||''} · ${p.year} · ${s.network||''}</div>
+      <div class="phone-meta2">${s.chipset||''} · ${s.ram||''} RAM</div>
+    </div>
+    <div class="phone-actions">
+      <button class="btn-specs" onclick="openSpecs('${p.id}')">SPECS</button>
+      <button class="btn-cmp ${inCmp?'added':''}" onclick="toggleCompare('${p.id}')">${inCmp?'✓ ADDED':'+ COMPARE'}</button>
+    </div>
+  </div>`;
+}
+
+// ═══ SPECS ════════════════════════════════════════════════════════════════
+function openSpecs(id) {
+  const p = ALL_PHONES.find(x => x.id === id);
+  if (!p) return;
+  trackView(p.id);
+  const s = p.specs||{};
+  const imgHtml = p.img
+    ? `<img class="specs-img" src="${p.img}" alt="${p.name}" onerror="this.outerHTML='<div class=specs-img-fb>📱</div>'">`
+    : `<div class="specs-img-fb">📱</div>`;
+
+  document.getElementById('specsContent').innerHTML = `
+    <div class="specs-hero">
+      ${imgHtml}
+      <div class="specs-title-wrap">
+        <div class="specs-name">${p.name}</div>
+        <div class="specs-brand">${(p.brand||'').toUpperCase()} · ${p.year}</div>
+        <div class="specs-pills">
+          <span class="pill hl">${s.network||'—'}</span>
+          <span class="pill hl">${s.ram||'—'} RAM</span>
+          <span class="pill good">${s.battery||'—'}</span>
+          <span class="pill">${s.os||'—'}</span>
+          <span class="pill">${s.storage||'—'}</span>
+        </div>
+      </div>
+    </div>
+    <div class="specs-grid">
+      ${sBlock('DISPLAY',   [['Panel',s.display]])}
+      ${sBlock('PROCESSOR', [['Chipset',s.chipset],['RAM',s.ram,'g'],['Storage',s.storage]])}
+      ${sBlock('CAMERA',    [['Rear',s.rear_cam],['Front',s.front_cam,'g']])}
+      ${sBlock('BATTERY',   [['Capacity',s.battery,'g'],['Charging',s.charging]])}
+      ${sBlock('OS & NET',  [['OS',s.os],['Network',s.network,s.network==='5G'?'g':'']])}
+      ${sBlock('BUILD',     [['Weight',s.weight],['Thickness',s.thickness],['Colors',s.colors]])}
+    </div>`;
+
+  showView('viewSpecs');
+}
+
+function sBlock(title, rows) {
+  return `<div class="spec-block">
+    <div class="sb-title">${title}</div>
+    ${rows.map(([k,v,c])=>`<div class="sb-row"><span class="sb-k">${k}</span><span class="sb-v ${c||''}">${v||'N/A'}</span></div>`).join('')}
+  </div>`;
+}
+
+function goBackFromSpecs() {
+  specsFrom === 'list' && currentBrand ? showView('viewList') : showView('viewSearch');
+}
+
+// ═══ COMPARE ══════════════════════════════════════════════════════════════
+function toggleCompare(id) {
+  const p = ALL_PHONES.find(x => x.id === id);
+  if (!p) return;
+  const idx = compareList.findIndex(c => c.id === id);
+  if (idx >= 0) compareList.splice(idx, 1);
+  else {
+    if (compareList.length >= 2) { alert('Remove one phone first to add another.'); return; }
+    compareList.push(p);
+  }
+  updateCompareBar();
+  refreshCurrentList();
+}
+
+function updateCompareBar() {
+  const bar = document.getElementById('compareBar');
+  bar.classList.toggle('show', compareList.length > 0);
+  [0,1].forEach(i => {
+    const slot = document.getElementById('slot'+i);
+    if (compareList[i]) {
+      slot.className = 'compare-slot filled';
+      slot.innerHTML = `<span style="font-size:0.62rem;padding:0 12px 0 4px">${compareList[i].name}</span>
+        <button class="remove-btn" onclick="toggleCompare('${compareList[i].id}')">✕</button>`;
+    } else {
+      slot.className = 'compare-slot';
+      slot.innerHTML = 'Phone '+(i+1);
+    }
+  });
+  document.getElementById('btnCompare').disabled = compareList.length < 2;
+}
+
+function refreshCurrentList() {
+  const active = document.querySelector('.view.active');
+  if (!active) return;
+  if (active.id === 'viewList' && currentBrand) {
+    document.getElementById('phoneList').innerHTML =
+      (DB[currentBrand.slug]||[]).map(p => phoneItemHTML(p)).join('');
+  } else if (active.id === 'viewSearch') {
+    handleSearch(document.getElementById('searchInput').value, true);
+  }
+}
+
+function showComparison() {
+  if (compareList.length < 2) return;
+  trackCompare(compareList[0].id, compareList[1].id);
+  const [a, b] = compareList;
+  const sa = a.specs||{}, sb2 = b.specs||{};
+
+  const SECTIONS = [
+    { title:'DISPLAY',   keys:['display'] },
+    { title:'PROCESSOR', keys:['chipset','ram','storage'] },
+    { title:'CAMERA',    keys:['rear_cam','front_cam'] },
+    { title:'BATTERY',   keys:['battery','charging'] },
+    { title:'OS & NETWORK', keys:['os','network'] },
+    { title:'BUILD',     keys:['weight','thickness'] },
+  ];
+
+  const imgA = a.img ? `<img class="cmp-head-img" src="${a.img}" onerror="this.style.display='none'">` : '';
+  const imgB = b.img ? `<img class="cmp-head-img" src="${b.img}" onerror="this.style.display='none'">` : '';
+
+  let html = `<div class="cmp-phones">
+    <div class="cmp-head">${imgA}<div class="cmp-head-name">${a.name}</div><div class="cmp-head-brand">${(a.brand||'').toUpperCase()} · ${a.year}</div></div>
+    <div class="cmp-head">${imgB}<div class="cmp-head-name">${b.name}</div><div class="cmp-head-brand">${(b.brand||'').toUpperCase()} · ${b.year}</div></div>
+  </div>`;
+
+  SECTIONS.forEach(sec => {
+    html += `<div class="cmp-section-title">${sec.title}</div>`;
+    sec.keys.forEach(key => {
+      const va = sa[key]||'N/A', vb = sb2[key]||'N/A';
+      const winner = getWinner(key, va, vb);
+      const ca = winner==='a'?'winner':'', cb = winner==='b'?'winner':'';
+      const label = key.replace(/_/g,' ').toUpperCase();
+      html += `<div class="cmp-row">
+        <div class="cmp-cell ${ca}"><div class="cmp-key">${label}</div><div class="cmp-val">${va}</div></div>
+        <div class="cmp-cell ${cb}"><div class="cmp-key">${label}</div><div class="cmp-val">${vb}</div></div>
+      </div>`;
+    });
+  });
+
+  document.getElementById('compareContent').innerHTML = html;
+  showView('viewCompare');
+}
+
+function goBackFromCompare() {
+  currentBrand ? showView('viewList') : showView('viewBrands');
+}
+
+// ═══ SEARCH ═══════════════════════════════════════════════════════════════
+let searchT;
+function handleSearch(q, silent=false) {
+  if (!silent) document.getElementById('searchClear').classList.toggle('show', q.length > 0);
+  clearTimeout(searchT);
+  if (!q.trim()) { if (!silent) { switchTab('brands'); showView('viewBrands'); } return; }
+  if (!silent) switchTab('search');
+  searchT = setTimeout(() => {
+    const ql = q.toLowerCase();
+    const res = ALL_PHONES.filter(p =>
+      p.name.toLowerCase().includes(ql) ||
+      (p.brand||'').toLowerCase().includes(ql) ||
+      (p.specs?.chipset||'').toLowerCase().includes(ql) ||
+      String(p.year).includes(ql)
+    );
+    specsFrom = 'search';
+    document.getElementById('searchResults').innerHTML = res.length
+      ? res.map(p => phoneItemHTML(p)).join('')
+      : `<div class="no-results">// No results for "${q}"</div>`;
+    if (!silent) showView('viewSearch');
+  }, 220);
+}
+
+function clearSearch() {
+  document.getElementById('searchInput').value='';
+  document.getElementById('searchClear').classList.remove('show');
+  switchTab('brands'); showView('viewBrands');
+}
+
+// ═══ VIEW & TAB HELPERS ═══════════════════════════════════════════════════
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function switchTab(t) {
+  document.getElementById('tabBrands').classList.toggle('active', t==='brands');
+  document.getElementById('tabSearch').classList.toggle('active', t==='search');
+}
+
+// ═══ INIT ═════════════════════════════════════════════════════════════════
+renderBrands();
+</script>
+</body>
+</html>
